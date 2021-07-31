@@ -36,6 +36,21 @@ func decodeJWT(secret, access string) (*jwt.Token, error) {
 	})
 }
 
+type issuerMock struct {
+	mock.Mock
+}
+
+func (m *issuerMock) Issue(user model.User) (auth.Token, error) {
+	args := m.Called(user)
+
+	token := args.Get(0)
+	if token == nil {
+		return auth.Token{}, args.Error(1)
+	}
+
+	return token.(auth.Token), args.Error(1)
+}
+
 func TestIssuer(t *testing.T) {
 	secret := "123.456"
 	timer := &timerMock{value: time.Now()}

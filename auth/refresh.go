@@ -62,7 +62,7 @@ type refresher struct {
 	issuer Issuer
 }
 
-func NewRefresher(tx repo.Transaction, timer Timer, tokens repo.RefreshTokens, issuer Issuer) Refresher {
+func NewRefresher(timer Timer, tx repo.Transaction, tokens repo.RefreshTokens, issuer Issuer) Refresher {
 	return &refresher{
 		tx:     tx,
 		timer:  timer,
