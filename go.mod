@@ -9,6 +9,7 @@ require (
 	github.com/lib/pq v1.10.2 // indirect
 	github.com/markbates/goth v1.68.0 // indirect
 	github.com/stretchr/testify v1.7.0 // indirect
+	golang.org/x/oauth2 v0.0.0-20200902213428-5d25da1a8d43 // indirect
 	gorm.io/driver/sqlite v1.1.4 // indirect
 	gorm.io/gorm v1.21.12 // indirect
 )
