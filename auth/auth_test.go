@@ -1,9 +1,12 @@
 package auth_test
 
 import (
+	"testing"
 	"time"
 
 	"github.com/stretchr/testify/mock"
+	"github.com/stretchr/testify/require"
+	"github.com/vbogretsov/guard/auth"
 )
 
 type timerMock struct {
@@ -37,4 +40,16 @@ func (m *txMock) Default() {
 	m.On("Begin").Return(nil)
 	m.On("Commit").Return(nil)
 	m.On("Close").Return(nil)
+}
+
+func TestTimer(t *testing.T) {
+	tm := auth.RealTimer{}
+
+	now := time.Now()
+
+	v1 := tm.Now()
+	require.GreaterOrEqual(t, now.Unix(), v1.Unix())
+
+	v2 := tm.Now()
+	require.Equal(t, v1, v2)
 }

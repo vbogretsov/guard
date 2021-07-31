@@ -39,6 +39,21 @@ func matchUser(user model.User) func(model.User) bool {
 	}
 }
 
+type userFindOrCreatorMock struct {
+	mock.Mock
+}
+
+func (m *userFindOrCreatorMock) FindOrCreate(username string) (model.User, error) {
+	args := m.Called(username)
+
+	value := args.Get(0)
+	if value == nil {
+		return model.User{}, args.Error(1)
+	}
+
+	return value.(model.User), args.Error(1)
+}
+
 func TestUserProvideCommand(t *testing.T) {
 	t.Run("New", func(t *testing.T) {
 		um := &usersMock{}

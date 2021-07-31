@@ -43,6 +43,24 @@ func matchXSRF(token model.XSRFToken) func(model.XSRFToken) bool {
 	}
 }
 
+type xsrfGeneratorMock struct {
+	mock.Mock
+}
+
+func (m *xsrfGeneratorMock) Generate() (string, error) {
+	args := m.Called()
+	return args.String(0), args.Error(1)
+}
+
+type xsrfValidatorMock struct {
+	mock.Mock
+}
+
+func (m *xsrfValidatorMock) Validate(value string) error {
+	args := m.Called(value)
+	return args.Error(0)
+}
+
 func TestXSRFGenerator(t *testing.T) {
 	tokens := &xsrfMock{}
 	timer := &timerMock{value: time.Now()}
