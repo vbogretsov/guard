@@ -23,6 +23,7 @@ type xsrfGenerator struct {
 func NewXSRFGenerator(tokens repo.XSRFTokens, timer Timer, ttl time.Duration) XSRFGenerator {
 	return &xsrfGenerator{
 		tokens: tokens,
+		timer:  timer,
 		ttl:    ttl,
 	}
 }
