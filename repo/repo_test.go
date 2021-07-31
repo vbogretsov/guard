@@ -66,7 +66,8 @@ func TestOnSQLite(t *testing.T) {
 	require.NoError(t, db.AutoMigrate(&model.XSRFToken{}), "failed to auto migrate xsrf_tokens")
 
 	t.Run("Users", func(t *testing.T) {
-		ur := repo.NewUsers(db)
+		tx := repo.NewTransaction(db)
+		ur := repo.NewUsers(tx)
 
 		for _, u := range users {
 			t.Run("Create", func(t *testing.T) {
@@ -90,7 +91,8 @@ func TestOnSQLite(t *testing.T) {
 	})
 
 	t.Run("RefreshTokens", func(t *testing.T) {
-		rr := repo.NewRefreshTokens(db)
+		tx := repo.NewTransaction(db)
+		rr := repo.NewRefreshTokens(tx)
 
 		for _, rt := range refreshTokens {
 			t.Run("Create", func(t *testing.T) {
@@ -128,7 +130,8 @@ func TestOnSQLite(t *testing.T) {
 	})
 
 	t.Run("XSRFTokens", func(t *testing.T) {
-		xr := repo.NewXSRFTokens(db)
+		tx := repo.NewTransaction(db)
+		xr := repo.NewXSRFTokens(tx)
 
 		for _, xt := range xsrfTokens {
 			t.Run("Create", func(t *testing.T) {
@@ -160,6 +163,86 @@ func TestOnSQLite(t *testing.T) {
 
 			id1 := xsrfTokens[1].ID
 			_, err = xr.Find(id1)
+			require.NoError(t, err)
+		})
+	})
+
+	t.Run("Atomic", func(t *testing.T) {
+		xsrf := model.XSRFToken{
+			ID:      "atomic.xsrf.123",
+			Created: 1600000000,
+			Expires: 1600000010,
+		}
+
+		user := model.User{
+			ID:      "atomic.user.123",
+			Name:    "x0@mail.org",
+			Created: 1600000000,
+		}
+
+		refresh := model.RefreshToken{
+			ID:      "atomic.refresh.123",
+			UserID:  user.ID,
+			Created: 1600000000,
+			Expires: 1600000010,
+		}
+
+		t.Run("Rollback", func(t *testing.T) {
+			tx := repo.NewTransaction(db)
+
+			xsrfRepo := repo.NewXSRFTokens(tx)
+			userRepo := repo.NewUsers(tx)
+			refreshRepo := repo.NewRefreshTokens(tx)
+
+			test := func(tx repo.Transaction) {
+				require.NoError(t, tx.Begin())
+				defer func() { require.NoError(t, tx.Close()) }()
+
+				require.NoError(t, xsrfRepo.Create(xsrf))
+				require.NoError(t, userRepo.Create(user))
+				require.NoError(t, refreshRepo.Create(refresh))
+			}
+
+			test(tx)
+
+			_, err = xsrfRepo.Find(xsrf.ID)
+			require.ErrorIs(t, err, repo.ErrorNotFound)
+
+			_, err = userRepo.Find(user.Name)
+			require.ErrorIs(t, err, repo.ErrorNotFound)
+
+			_, err = refreshRepo.Find(refresh.ID)
+			require.ErrorIs(t, err, repo.ErrorNotFound)
+
+		})
+
+		t.Run("Commit", func(t *testing.T) {
+			tx := repo.NewTransaction(db)
+
+			xsrfRepo := repo.NewXSRFTokens(tx)
+			userRepo := repo.NewUsers(tx)
+			refreshRepo := repo.NewRefreshTokens(tx)
+
+			test := func(tx repo.Transaction) {
+				require.NoError(t, tx.Begin())
+				defer func() { require.NoError(t, tx.Close()) }()
+
+				require.NoError(t, xsrfRepo.Create(xsrf))
+				require.NoError(t, userRepo.Create(user))
+				require.NoError(t, refreshRepo.Create(refresh))
+
+				require.NoError(t, tx.Commit())
+			}
+
+			test(tx)
+
+			_, err = xsrfRepo.Find(xsrf.ID)
+			require.NoError(t, err)
+
+			_, err = userRepo.Find(user.Name)
+			require.NoError(t, err)
+
+			_, err = refreshRepo.Find(refresh.ID)
 			require.NoError(t, err)
 		})
 	})

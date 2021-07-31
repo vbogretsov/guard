@@ -54,9 +54,9 @@ func TestUserProvideCommand(t *testing.T) {
 		um.On("Create", mock.MatchedBy(matchUser(user))).
 			Return(nil)
 
-		cmd := auth.NewUserProvideCommand(um, tm)
+		svc := auth.NewFindOrCreator(um, tm)
 
-		result, err := cmd.Execute(user.Name)
+		result, err := svc.FindOrCreate(user.Name)
 		require.NoError(t, err)
 		require.NotEmpty(t, result.ID)
 	})
@@ -72,9 +72,9 @@ func TestUserProvideCommand(t *testing.T) {
 
 		um.On("Find", user.Name).Return(user, nil)
 
-		cmd := auth.NewUserProvideCommand(um, tm)
+		svc := auth.NewFindOrCreator(um, tm)
 
-		result, err := cmd.Execute(user.Name)
+		result, err := svc.FindOrCreate(user.Name)
 		require.NoError(t, err)
 		require.Equal(t, user, result)
 	})

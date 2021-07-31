@@ -9,20 +9,20 @@ import (
 
 const uidLen = 64
 
-type UserProvideCommand interface {
-	Execute(username string) (model.User, error)
+type UserFindOrCreator interface {
+	FindOrCreate(username string) (model.User, error)
 }
 
-type userProvideCommand struct {
+type userFindOrCreator struct {
 	users repo.Users
 	timer Timer
 }
 
-func NewUserProvideCommand(users repo.Users, timer Timer) UserProvideCommand {
-	return &userProvideCommand{users: users, timer: timer}
+func NewFindOrCreator(users repo.Users, timer Timer) UserFindOrCreator {
+	return &userFindOrCreator{users: users, timer: timer}
 }
 
-func (c *userProvideCommand) Execute(username string) (model.User, error) {
+func (c *userFindOrCreator) FindOrCreate(username string) (model.User, error) {
 	user, err := c.users.Find(username)
 	if err != nil {
 		if !errors.Is(err, repo.ErrorNotFound) {
