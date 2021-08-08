@@ -23,6 +23,8 @@ type oauthStarter struct {
 
 func NewOAuthStarter(ttl time.Duration, timer Timer, sessions repo.Sessions, provider goth.Provider) OAuthStarter {
 	return &oauthStarter{
+		ttl:      ttl,
+		timer:    timer,
 		sessions: sessions,
 		provider: provider,
 	}

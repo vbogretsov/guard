@@ -60,6 +60,15 @@ func (m *sessionMock) Authorize(provider goth.Provider, params goth.Params) (str
 	return result.(string), args.Error(1)
 }
 
+func (m *sessionMock) GetAuthURL() (string, error) {
+	args := m.Called()
+	return args.String(0), args.Error(1)
+}
+
+func (m *sessionMock) Marshal() string {
+	return m.Called().String(0)
+}
+
 type providerMock struct {
 	mock.Mock
 }
