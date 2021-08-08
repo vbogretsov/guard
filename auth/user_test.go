@@ -110,3 +110,34 @@ func TestUserFinOrCreator(t *testing.T) {
 		require.Equal(t, user, result)
 	})
 }
+
+func TestUserFetcher(t *testing.T) {
+	var params goth.Params
+
+	provider := &providerMock{}
+	session := &sessionMock{}
+	userFoC := &userFindOrCreatorMock{}
+
+	rawsess := "user.session.value.123"
+
+	gUser := goth.User{
+		Email: "u1@mail.org",
+	}
+
+	user := model.User{
+		ID:      "user.user.id",
+		Name:    gUser.Email,
+		Created: 1600000000,
+	}
+
+	provider.On("UnmarshalSession", rawsess).Return(session, nil)
+	session.On("Authorize", provider, params).Return(nil, nil)
+	provider.On("FetchUser", session).Return(gUser, nil)
+	userFoC.On("FindOrCreate", gUser.Email).Return(user, nil)
+
+	cmd := auth.NewUserFetcher(provider, userFoC)
+
+	result, err := cmd.Fetch(rawsess, params)
+	require.NoError(t, err)
+	require.Equal(t, user, result)
+}
