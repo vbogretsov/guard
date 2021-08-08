@@ -70,7 +70,7 @@ func (m *userFetcherMock) Fetch(rawsess string, params goth.Params) (model.User,
 	return user.(model.User), args.Error(1)
 }
 
-func TestUserProvideCommand(t *testing.T) {
+func TestUserFinOrCreator(t *testing.T) {
 	t.Run("New", func(t *testing.T) {
 		um := &usersMock{}
 		tm := &timerMock{value: time.Now()}

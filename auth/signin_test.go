@@ -35,6 +35,8 @@ func TestSignIn(t *testing.T) {
 			RefreshExpires: 1640000020,
 		}
 
+		validator.On("Validate", session.ID).Return(session, nil)
+		fetcher.On("Fetch", session.Value, nil).Return(user, nil)
 		issuer.On("Issue", user).Return(token, nil)
 
 		cmd := auth.NewSignIner(validator, fetcher, issuer)
