@@ -37,7 +37,7 @@ func (c *userFetcher) Fetch(rawsess string, params goth.Params) (model.User, err
 
 	_, err = session.Authorize(c.provider, params)
 	if err != nil {
-		return empty, err
+		return empty, Error{msg: "unauthorized"}
 	}
 
 	gUser, err := c.provider.FetchUser(session)

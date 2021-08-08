@@ -1,6 +1,7 @@
 package auth_test
 
 import (
+	"errors"
 	"testing"
 	"time"
 
@@ -109,35 +110,153 @@ func TestUserFinOrCreator(t *testing.T) {
 		require.NoError(t, err)
 		require.Equal(t, user, result)
 	})
+
+	t.Run("FailOnFind", func(t *testing.T) {
+		um := &usersMock{}
+		tm := &timerMock{value: time.Now()}
+
+		username := "xxx"
+		fail := errors.New("xxx")
+
+		um.On("Find", username).Return(model.User{}, fail)
+
+		svc := auth.NewUserFindOrCreator(um, tm)
+		_, err := svc.FindOrCreate(username)
+		require.Error(t, err)
+		require.ErrorIs(t, err, fail)
+	})
+
+	t.Run("FailOnCreate", func(t *testing.T) {
+		um := &usersMock{}
+		tm := &timerMock{value: time.Now()}
+
+		username := "xxx"
+		fail := errors.New("xxx")
+
+		um.On("Find", username).Return(model.User{}, repo.ErrorNotFound)
+		um.On("Create", mock.Anything).Return(fail)
+
+		svc := auth.NewUserFindOrCreator(um, tm)
+
+		_, err := svc.FindOrCreate(username)
+		require.Error(t, err)
+		require.ErrorIs(t, err, fail)
+	})
 }
 
 func TestUserFetcher(t *testing.T) {
-	var params goth.Params
+	t.Run("Success", func(t *testing.T) {
+		var params goth.Params
 
-	provider := &providerMock{}
-	session := &sessionMock{}
-	userFoC := &userFindOrCreatorMock{}
+		provider := &providerMock{}
+		session := &sessionMock{}
+		userFoC := &userFindOrCreatorMock{}
 
-	rawsess := "user.session.value.123"
+		rawsess := "user.session.value.123"
 
-	gUser := goth.User{
-		Email: "u1@mail.org",
-	}
+		gUser := goth.User{
+			Email: "u1@mail.org",
+		}
 
-	user := model.User{
-		ID:      "user.user.id",
-		Name:    gUser.Email,
-		Created: 1600000000,
-	}
+		user := model.User{
+			ID:      "user.user.id",
+			Name:    gUser.Email,
+			Created: 1600000000,
+		}
 
-	provider.On("UnmarshalSession", rawsess).Return(session, nil)
-	session.On("Authorize", provider, params).Return(nil, nil)
-	provider.On("FetchUser", session).Return(gUser, nil)
-	userFoC.On("FindOrCreate", gUser.Email).Return(user, nil)
+		provider.On("UnmarshalSession", rawsess).Return(session, nil)
+		session.On("Authorize", provider, params).Return(nil, nil)
+		provider.On("FetchUser", session).Return(gUser, nil)
+		userFoC.On("FindOrCreate", gUser.Email).Return(user, nil)
 
-	cmd := auth.NewUserFetcher(provider, userFoC)
+		cmd := auth.NewUserFetcher(provider, userFoC)
 
-	result, err := cmd.Fetch(rawsess, params)
-	require.NoError(t, err)
-	require.Equal(t, user, result)
+		result, err := cmd.Fetch(rawsess, params)
+		require.NoError(t, err)
+		require.Equal(t, user, result)
+	})
+
+	t.Run("FailOnUnmarshal", func(t *testing.T) {
+		var params goth.Params
+
+		provider := &providerMock{}
+		userFoC := &userFindOrCreatorMock{}
+
+		rawsess := "user.session.value.123"
+		fail := errors.New("xxx")
+
+		provider.On("UnmarshalSession", rawsess).Return(nil, fail)
+
+		cmd := auth.NewUserFetcher(provider, userFoC)
+
+		_, err := cmd.Fetch(rawsess, params)
+		require.Error(t, err)
+		require.ErrorIs(t, err, fail)
+	})
+
+	t.Run("FailOnAuthorize", func(t *testing.T) {
+		var params goth.Params
+
+		provider := &providerMock{}
+		session := &sessionMock{}
+		userFoC := &userFindOrCreatorMock{}
+
+		rawsess := "user.session.value.123"
+
+		provider.On("UnmarshalSession", rawsess).Return(session, nil)
+		session.On("Authorize", provider, params).Return(nil, errors.New("xxx"))
+
+		cmd := auth.NewUserFetcher(provider, userFoC)
+
+		_, err := cmd.Fetch(rawsess, params)
+		require.Error(t, err)
+		require.ErrorAs(t, err, &auth.Error{})
+	})
+
+	t.Run("FailOnFetch", func(t *testing.T) {
+		var params goth.Params
+
+		provider := &providerMock{}
+		session := &sessionMock{}
+		userFoC := &userFindOrCreatorMock{}
+
+		rawsess := "user.session.value.123"
+		fail := errors.New("xxx")
+
+		provider.On("UnmarshalSession", rawsess).Return(session, nil)
+		session.On("Authorize", provider, params).Return(nil, nil)
+		provider.On("FetchUser", session).Return(nil, fail)
+
+		cmd := auth.NewUserFetcher(provider, userFoC)
+
+		_, err := cmd.Fetch(rawsess, params)
+		require.Error(t, err)
+		require.ErrorIs(t, err, fail)
+	})
+
+	t.Run("FailOnFindOrCreate", func(t *testing.T) {
+		var params goth.Params
+
+		provider := &providerMock{}
+		session := &sessionMock{}
+		userFoC := &userFindOrCreatorMock{}
+
+		rawsess := "user.session.value.123"
+		fail := errors.New("xxx")
+
+		gUser := goth.User{
+			Email: "u1@mail.org",
+		}
+
+		provider.On("UnmarshalSession", rawsess).Return(session, nil)
+		session.On("Authorize", provider, params).Return(nil, nil)
+		provider.On("FetchUser", session).Return(gUser, nil)
+		userFoC.On("FindOrCreate", gUser.Email).Return(nil, fail)
+
+		cmd := auth.NewUserFetcher(provider, userFoC)
+
+		_, err := cmd.Fetch(rawsess, params)
+		require.Error(t, err)
+		require.ErrorIs(t, err, fail)
+	})
 }

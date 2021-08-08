@@ -1,6 +1,7 @@
 package auth_test
 
 import (
+	"errors"
 	"fmt"
 	"testing"
 	"time"
@@ -52,43 +53,72 @@ func (m *issuerMock) Issue(user model.User) (auth.Token, error) {
 }
 
 func TestIssuer(t *testing.T) {
-	secret := "123.456"
-	timer := &timerMock{value: time.Now()}
-	refresh := &refreshTokenCreatorMock{}
+	t.Run("Success", func(t *testing.T) {
+		secret := "123.456"
+		timer := &timerMock{value: time.Now()}
+		refresh := &refreshTokenCreatorMock{}
 
-	accessTTL := 300 * time.Second
-	refreshTTL := 3600 * time.Second
+		accessTTL := 300 * time.Second
+		refreshTTL := 3600 * time.Second
 
-	user := model.User{
-		ID:      "issuer.user.123",
-		Name:    "u0@mail.org",
-		Created: timer.Now().Unix(),
-	}
+		user := model.User{
+			ID:      "issuer.user.123",
+			Name:    "u0@mail.org",
+			Created: timer.Now().Unix(),
+		}
 
-	refreshToken := model.RefreshToken{
-		UserID:  user.ID,
-		User:    user,
-		Created: timer.Now().Unix(),
-		Expires: timer.Now().Add(refreshTTL).Unix(),
-	}
+		refreshToken := model.RefreshToken{
+			UserID:  user.ID,
+			User:    user,
+			Created: timer.Now().Unix(),
+			Expires: timer.Now().Add(refreshTTL).Unix(),
+		}
 
-	refresh.
-		On("Create", mock.MatchedBy(matchUser(user))).
-		Return(refreshToken, nil)
+		refresh.
+			On("Create", mock.MatchedBy(matchUser(user))).
+			Return(refreshToken, nil)
 
-	cmd := auth.NewIssuer(secret, timer, accessTTL, refresh)
+		cmd := auth.NewIssuer(secret, timer, accessTTL, refresh)
 
-	token, err := cmd.Issue(user)
-	require.NoError(t, err)
+		token, err := cmd.Issue(user)
+		require.NoError(t, err)
 
-	expires := timer.Now().Add(accessTTL).Unix()
+		expires := timer.Now().Add(accessTTL).Unix()
 
-	require.Equal(t, timer.Now().Unix(), token.IssuedAt)
-	require.Equal(t, expires, token.AccessExpires)
-	require.Equal(t, refreshToken.Expires, token.RefreshExpires)
+		require.Equal(t, timer.Now().Unix(), token.IssuedAt)
+		require.Equal(t, expires, token.AccessExpires)
+		require.Equal(t, refreshToken.Expires, token.RefreshExpires)
 
-	raw, err := decodeJWT(secret, token.Access)
-	require.NoError(t, err)
-	require.Equal(t, user.Name, (raw.Claims).(jwt.MapClaims)["sub"])
-	require.Equal(t, expires, int64((raw.Claims).(jwt.MapClaims)["exp"].(float64)))
+		raw, err := decodeJWT(secret, token.Access)
+		require.NoError(t, err)
+		require.Equal(t, user.Name, (raw.Claims).(jwt.MapClaims)["sub"])
+		require.Equal(t, expires, int64((raw.Claims).(jwt.MapClaims)["exp"].(float64)))
+	})
+
+	t.Run("Success", func(t *testing.T) {
+		secret := "123.456"
+		timer := &timerMock{value: time.Now()}
+		refresh := &refreshTokenCreatorMock{}
+
+		accessTTL := 300 * time.Second
+
+		user := model.User{
+			ID:      "issuer.user.123",
+			Name:    "u0@mail.org",
+			Created: timer.Now().Unix(),
+		}
+
+		fail := errors.New("xxx")
+
+		refresh.
+			On("Create", mock.Anything).
+			Return(nil, fail)
+
+		cmd := auth.NewIssuer(secret, timer, accessTTL, refresh)
+
+		_, err := cmd.Issue(user)
+		require.Error(t, err)
+		require.ErrorIs(t, err, fail)
+
+	})
 }

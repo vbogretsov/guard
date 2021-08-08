@@ -1,6 +1,7 @@
 package auth_test
 
 import (
+	"errors"
 	"testing"
 	"time"
 
@@ -117,5 +118,21 @@ func TestSessionValidator(t *testing.T) {
 		_, err := cmd.Validate(value)
 		require.Error(t, err)
 		require.ErrorAs(t, err, &auth.Error{})
+	})
+
+	t.Run("Failed", func(t *testing.T) {
+		sessions := &sessionsMock{}
+		timer := &timerMock{value: time.Now()}
+
+		value := "xxx"
+		fail := errors.New("xxx")
+
+		sessions.On("Find", value).Return(nil, fail)
+
+		cmd := auth.NewSessionValidator(sessions, timer)
+
+		_, err := cmd.Validate(value)
+		require.Error(t, err)
+		require.ErrorIs(t, err, fail)
 	})
 }

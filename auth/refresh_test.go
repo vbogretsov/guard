@@ -1,6 +1,7 @@
 package auth_test
 
 import (
+	"errors"
 	"testing"
 	"time"
 
@@ -79,12 +80,26 @@ func TestRefreshTokenCreator(t *testing.T) {
 		require.Equal(t, token.Created, result.Created)
 		require.Equal(t, token.Expires, result.Expires)
 	})
+
+	t.Run("Failed", func(t *testing.T) {
+		rtm := &refreshTokensMock{}
+		tm := &timerMock{value: time.Now()}
+
+		fail := errors.New("xxx")
+
+		rtm.On("Create", mock.Anything).Return(fail)
+
+		cmd := auth.NewRefreshTokenCreator(rtm, tm, ttl)
+
+		_, err := cmd.Create(user)
+
+		require.ErrorIs(t, err, fail)
+	})
 }
 
 func TestRefreshToken(t *testing.T) {
 	t.Run("Fresh", func(t *testing.T) {
 		timer := &timerMock{value: time.Now()}
-		tx := &txMock{}
 		tokens := &refreshTokensMock{}
 		issuer := &issuerMock{}
 
@@ -104,12 +119,11 @@ func TestRefreshToken(t *testing.T) {
 
 		timer.value = time.Now().Add(2600 * time.Second)
 
-		tx.Default()
 		tokens.On("Find", refresh.ID).Return(refresh, nil)
 		tokens.On("Delete", refresh.ID).Return(nil)
 		issuer.On("Issue", user).Return(auth.Token{}, nil)
 
-		cmd := auth.NewRefresher(timer, tx, tokens, issuer)
+		cmd := auth.NewRefresher(timer, tokens, issuer)
 
 		_, err := cmd.Refresh(refresh.ID)
 		require.NoError(t, err)
@@ -117,7 +131,6 @@ func TestRefreshToken(t *testing.T) {
 
 	t.Run("Expired", func(t *testing.T) {
 		timer := &timerMock{value: time.Now()}
-		tx := &txMock{}
 		tokens := &refreshTokensMock{}
 
 		refresh := model.RefreshToken{
@@ -129,11 +142,9 @@ func TestRefreshToken(t *testing.T) {
 
 		timer.value = time.Now().Add(4600 * time.Second)
 
-		tx.Default()
 		tokens.On("Find", refresh.ID).Return(refresh, nil)
-		tokens.On("Delete", refresh.ID).Return(nil)
 
-		cmd := auth.NewRefresher(timer, tx, tokens, &issuerMock{})
+		cmd := auth.NewRefresher(timer, tokens, &issuerMock{})
 
 		_, err := cmd.Refresh(refresh.ID)
 		require.Error(t, err)
@@ -142,20 +153,62 @@ func TestRefreshToken(t *testing.T) {
 
 	t.Run("Invalid", func(t *testing.T) {
 		timer := &timerMock{value: time.Now()}
-		tx := &txMock{}
 		tokens := &refreshTokensMock{}
 
 		timer.value = time.Now().Add(4600 * time.Second)
 
 		refreshToken := "xxx"
 
-		tx.Default()
 		tokens.On("Find", refreshToken).Return(nil, repo.ErrorNotFound)
 
-		cmd := auth.NewRefresher(timer, tx, tokens, &issuerMock{})
+		cmd := auth.NewRefresher(timer, tokens, &issuerMock{})
 
 		_, err := cmd.Refresh(refreshToken)
 		require.Error(t, err)
 		require.ErrorAs(t, err, &auth.Error{})
+	})
+
+	t.Run("FainOldFailed", func(t *testing.T) {
+		timer := &timerMock{value: time.Now()}
+		tokens := &refreshTokensMock{}
+
+		timer.value = time.Now().Add(4600 * time.Second)
+
+		refreshToken := "xxx"
+		fail := errors.New("xxx")
+
+		tokens.On("Find", refreshToken).Return(nil, fail)
+
+		cmd := auth.NewRefresher(timer, tokens, &issuerMock{})
+
+		_, err := cmd.Refresh(refreshToken)
+		require.Error(t, err)
+		require.ErrorIs(t, err, fail)
+	})
+
+	t.Run("IssueNewFailed", func(t *testing.T) {
+		timer := &timerMock{value: time.Now()}
+		issuer := &issuerMock{}
+		tokens := &refreshTokensMock{}
+
+		refresh := model.RefreshToken{
+			ID:      "refresh.123",
+			UserID:  "xxx",
+			Created: time.Now().Unix(),
+			Expires: time.Now().Add(3600 * time.Second).Unix(),
+		}
+
+		timer.value = time.Now().Add(2600 * time.Second)
+
+		fail := errors.New("xxx")
+
+		tokens.On("Find", refresh.ID).Return(refresh, nil)
+		issuer.On("Issue", mock.Anything).Return(nil, fail)
+
+		cmd := auth.NewRefresher(timer, tokens, issuer)
+
+		_, err := cmd.Refresh(refresh.ID)
+		require.Error(t, err)
+		require.ErrorIs(t, err, fail)
 	})
 }

@@ -106,7 +106,7 @@ func (s *scope) newIssuer() Issuer {
 }
 
 func (s *scope) newRefresher() Refresher {
-	return NewRefresher(s.newTimer(), s.newTransaction(), s.newRefreshTokensRepo(), s.newIssuer())
+	return NewRefresher(s.newTimer(), s.newRefreshTokensRepo(), s.newIssuer())
 }
 
 func (s *scope) newUserFetcher(provider goth.Provider) UserFetcher {
