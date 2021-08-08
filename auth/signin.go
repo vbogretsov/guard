@@ -1,50 +1,42 @@
 package auth
 
-import "github.com/vbogretsov/guard/repo"
+import (
+	"github.com/markbates/goth"
+)
 
 type SignIner interface {
-	SignIn(xsrfToken, username string) (Token, error)
+	SignIn(code string, params goth.Params) (Token, error)
 }
 
 type signiner struct {
-	tx     repo.Transaction
-	xsrf   XSRGValidator
-	user   UserFindOrCreator
-	issuer Issuer
+	validator SessionValidator
+	fetcher   UserFetcher
+	issuer    Issuer
 }
 
-func NewSignIner(tx repo.Transaction, xsrf XSRGValidator, user UserFindOrCreator, issuer Issuer) SignIner {
+func NewSignIner(validator SessionValidator, fetcher UserFetcher, issuer Issuer) SignIner {
 	return &signiner{
-		tx:     tx,
-		xsrf:   xsrf,
-		user:   user,
-		issuer: issuer,
+		validator: validator,
+		fetcher:   fetcher,
+		issuer:    issuer,
 	}
 }
 
-func (c *signiner) SignIn(xsrfToken, username string) (Token, error) {
+func (c *signiner) SignIn(code string, params goth.Params) (Token, error) {
 	var empty Token
 
-	if err := c.tx.Begin(); err != nil {
-		return empty, err
-	}
-	defer c.tx.Close()
-
-	if err := c.xsrf.Validate(xsrfToken); err != nil {
+	session, err := c.validator.Validate(code)
+	if err != nil {
 		return empty, err
 	}
 
-	user, err := c.user.FindOrCreate(username)
+	user, err := c.fetcher.Fetch(session.Value, params)
 	if err != nil {
 		return empty, err
 	}
 
 	token, err := c.issuer.Issue(user)
 	if err != nil {
-		return empty, err
-	}
-
-	if err := c.tx.Commit(); err != nil {
 		return empty, err
 	}
 

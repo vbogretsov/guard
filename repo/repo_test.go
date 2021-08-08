@@ -42,14 +42,16 @@ var refreshTokens = []model.RefreshToken{
 	},
 }
 
-var xsrfTokens = []model.XSRFToken{
+var sessions = []model.Session{
 	{
 		ID:      "123",
+		Value:   "session.123",
 		Created: 1000000000,
 		Expires: 1000000010,
 	},
 	{
 		ID:      "456",
+		Value:   "session.123",
 		Created: 1000000010,
 		Expires: 1000000020,
 	},
@@ -63,7 +65,7 @@ func TestOnSQLite(t *testing.T) {
 	require.NoError(t, err, "unable to create SQLite database")
 	require.NoError(t, db.AutoMigrate(&model.User{}), "failed to auto migrate users")
 	require.NoError(t, db.AutoMigrate(&model.RefreshToken{}), "failed to auto migrate refresh_tokens")
-	require.NoError(t, db.AutoMigrate(&model.XSRFToken{}), "failed to auto migrate xsrf_tokens")
+	require.NoError(t, db.AutoMigrate(&model.Session{}), "failed to auto migrate sessions")
 
 	t.Run("Users", func(t *testing.T) {
 		tx := repo.NewTransaction(db)
@@ -129,47 +131,48 @@ func TestOnSQLite(t *testing.T) {
 		})
 	})
 
-	t.Run("XSRFTokens", func(t *testing.T) {
+	t.Run("Sessions", func(t *testing.T) {
 		tx := repo.NewTransaction(db)
-		xr := repo.NewXSRFTokens(tx)
+		sr := repo.NewSessions(tx)
 
-		for _, xt := range xsrfTokens {
+		for _, s := range sessions {
 			t.Run("Create", func(t *testing.T) {
-				require.NoError(t, xr.Create(xt), "failed to create xsrfToken(%s)", xt.ID)
+				require.NoError(t, sr.Create(s), "failed to create session(%s)", s.ID)
 			})
 		}
 
-		for _, xt1 := range xsrfTokens {
+		for _, s1 := range sessions {
 			t.Run("Find", func(t *testing.T) {
-				xt2, err := xr.Find(xt1.ID)
-				require.NoError(t, err, "failed to find xsrfToken(%s)", xt1.ID)
-				require.Equal(t, xt1, xt2, "the xsrfToken found does not match expected one")
+				s2, err := sr.Find(s1.ID)
+				require.NoError(t, err, "failed to find session(%s)", s1.ID)
+				require.Equal(t, s1, s2, "the xsrfToken found does not match expected one")
 			})
 		}
 
 		t.Run("NotFind", func(t *testing.T) {
-			xt, err := xr.Find("xxx")
+			xt, err := sr.Find("xxx")
 			require.Error(t, err, "found xsrfToken(%s)", xt.ID)
 			require.ErrorIs(t, err, repo.ErrorNotFound)
 		})
 
 		t.Run("Delete", func(t *testing.T) {
-			id0 := xsrfTokens[0].ID
-			require.NoError(t, xr.Delete(id0), "failed to delete xsrfToken(%s)", id0)
+			id0 := sessions[0].ID
+			require.NoError(t, sr.Delete(id0), "failed to delete session(%s)", id0)
 
-			_, err := xr.Find(id0)
+			_, err := sr.Find(id0)
 			require.Error(t, err)
 			require.ErrorIs(t, err, repo.ErrorNotFound)
 
-			id1 := xsrfTokens[1].ID
-			_, err = xr.Find(id1)
+			id1 := sessions[1].ID
+			_, err = sr.Find(id1)
 			require.NoError(t, err)
 		})
 	})
 
 	t.Run("Atomic", func(t *testing.T) {
-		xsrf := model.XSRFToken{
-			ID:      "atomic.xsrf.123",
+		sess := model.Session{
+			ID:      "atomic.session.123",
+			Value:   "atomic.session.value.123",
 			Created: 1600000000,
 			Expires: 1600000010,
 		}
@@ -190,7 +193,7 @@ func TestOnSQLite(t *testing.T) {
 		t.Run("Rollback", func(t *testing.T) {
 			tx := repo.NewTransaction(db)
 
-			xsrfRepo := repo.NewXSRFTokens(tx)
+			sessRepo := repo.NewSessions(tx)
 			userRepo := repo.NewUsers(tx)
 			refreshRepo := repo.NewRefreshTokens(tx)
 
@@ -198,14 +201,14 @@ func TestOnSQLite(t *testing.T) {
 				require.NoError(t, tx.Begin())
 				defer func() { require.NoError(t, tx.Close()) }()
 
-				require.NoError(t, xsrfRepo.Create(xsrf))
+				require.NoError(t, sessRepo.Create(sess))
 				require.NoError(t, userRepo.Create(user))
 				require.NoError(t, refreshRepo.Create(refresh))
 			}
 
 			test(tx)
 
-			_, err = xsrfRepo.Find(xsrf.ID)
+			_, err = sessRepo.Find(sess.ID)
 			require.ErrorIs(t, err, repo.ErrorNotFound)
 
 			_, err = userRepo.Find(user.Name)
@@ -219,7 +222,7 @@ func TestOnSQLite(t *testing.T) {
 		t.Run("Commit", func(t *testing.T) {
 			tx := repo.NewTransaction(db)
 
-			xsrfRepo := repo.NewXSRFTokens(tx)
+			xsrfRepo := repo.NewSessions(tx)
 			userRepo := repo.NewUsers(tx)
 			refreshRepo := repo.NewRefreshTokens(tx)
 
@@ -227,7 +230,7 @@ func TestOnSQLite(t *testing.T) {
 				require.NoError(t, tx.Begin())
 				defer func() { require.NoError(t, tx.Close()) }()
 
-				require.NoError(t, xsrfRepo.Create(xsrf))
+				require.NoError(t, xsrfRepo.Create(sess))
 				require.NoError(t, userRepo.Create(user))
 				require.NoError(t, refreshRepo.Create(refresh))
 
@@ -236,7 +239,7 @@ func TestOnSQLite(t *testing.T) {
 
 			test(tx)
 
-			_, err = xsrfRepo.Find(xsrf.ID)
+			_, err = xsrfRepo.Find(sess.ID)
 			require.NoError(t, err)
 
 			_, err = userRepo.Find(user.Name)

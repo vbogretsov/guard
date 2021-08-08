@@ -4,6 +4,7 @@ import (
 	"time"
 
 	"github.com/golang-jwt/jwt"
+	"github.com/markbates/goth"
 )
 
 var signingMethod = jwt.SigningMethodHS256
@@ -16,6 +17,7 @@ func (e Error) Error() string {
 	return e.msg
 }
 
+// TODO: use oauth2.Token
 type Token struct {
 	IssuedAt       int64
 	Access         string
@@ -43,7 +45,7 @@ func (rt *RealTimer) Now() time.Time {
 }
 
 type Factory interface {
-	NewOAuthStarter() OAuthStarter
-	NewSignIner() SignIner
+	NewOAuthStarter(provider goth.Provider) OAuthStarter
+	NewSignIner(provider goth.Provider) SignIner
 	NewRefresher() Refresher
 }

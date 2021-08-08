@@ -27,10 +27,10 @@ type RefreshTokens interface {
 	Delete(value string) error
 }
 
-type XSRFTokens interface {
-	Find(value string) (model.XSRFToken, error)
-	Create(token model.XSRFToken) error
-	Delete(value string) error
+type Sessions interface {
+	Find(code string) (model.Session, error)
+	Create(sess model.Session) error
+	Delete(code string) error
 }
 
 type GormTx struct {
@@ -148,30 +148,30 @@ func (rt *refreshTokens) Delete(id string) error {
 	return rt.tx.db().Delete(&token).Error
 }
 
-type xsrfTokens struct {
+type sessions struct {
 	tx *GormTx
 }
 
-func NewXSRFTokens(tx *GormTx) XSRFTokens {
-	return &xsrfTokens{tx: tx}
+func NewSessions(tx *GormTx) Sessions {
+	return &sessions{tx: tx}
 }
 
-func (x *xsrfTokens) Find(value string) (model.XSRFToken, error) {
-	var token model.XSRFToken
+func (s *sessions) Find(value string) (model.Session, error) {
+	var sess model.Session
 
-	r := x.tx.db().First(&token, "id = ?", value)
+	r := s.tx.db().First(&sess, "id = ?", value)
 	if r.Error != nil {
-		return token, r.Error
+		return sess, r.Error
 	}
 
-	return token, nil
+	return sess, nil
 }
 
-func (x *xsrfTokens) Create(token model.XSRFToken) error {
-	return x.tx.db().Create(&token).Error
+func (s *sessions) Create(sess model.Session) error {
+	return s.tx.db().Create(&sess).Error
 }
 
-func (x *xsrfTokens) Delete(value string) error {
-	token := model.XSRFToken{ID: value}
-	return x.tx.db().Delete(&token).Error
+func (s *sessions) Delete(code string) error {
+	sess := model.Session{ID: code}
+	return s.tx.db().Delete(&sess).Error
 }

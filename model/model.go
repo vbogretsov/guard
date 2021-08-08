@@ -14,8 +14,9 @@ type RefreshToken struct {
 	Expires int64
 }
 
-type XSRFToken struct {
+type Session struct {
 	ID      string
+	Value   string
 	Created int64
 	Expires int64
 }

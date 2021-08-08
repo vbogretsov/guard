@@ -1,36 +1,54 @@
 package auth
 
 import (
+	"time"
+
 	"github.com/markbates/goth"
+	"github.com/vbogretsov/guard/model"
+	"github.com/vbogretsov/guard/repo"
 )
 
+const codeLen = 128
+
 type OAuthStarter interface {
-	StartOAuth(providerName string) (string, error)
+	StartOAuth() (string, error)
 }
 
 type oauthStarter struct {
-	xsrf XSRFGenerator
+	ttl      time.Duration
+	timer    Timer
+	sessions repo.Sessions
+	provider goth.Provider
 }
 
-func NewOAuthStarter(xsrf XSRFGenerator) OAuthStarter {
+func NewOAuthStarter(ttl time.Duration, timer Timer, sessions repo.Sessions, provider goth.Provider) OAuthStarter {
 	return &oauthStarter{
-		xsrf: xsrf,
+		sessions: sessions,
+		provider: provider,
 	}
 }
 
-func (c *oauthStarter) StartOAuth(providerName string) (string, error) {
-	provider, err := goth.GetProvider(providerName)
+func (c *oauthStarter) StartOAuth() (string, error) {
+	code, err := generateRandomString(codeLen)
 	if err != nil {
 		return "", err
 	}
 
-	xsrf, err := c.xsrf.Generate()
+	sess, err := c.provider.BeginAuth(code)
 	if err != nil {
 		return "", err
 	}
 
-	sess, err := provider.BeginAuth(xsrf)
-	if err != nil {
+	now := c.timer.Now()
+
+	record := model.Session{
+		ID:      code,
+		Value:   sess.Marshal(),
+		Created: now.Unix(),
+		Expires: now.Add(c.ttl).Unix(),
+	}
+
+	if err := c.sessions.Create(record); err != nil {
 		return "", err
 	}
 

@@ -10,12 +10,16 @@ import (
 
 func TestSignIn(t *testing.T) {
 	t.Run("Success", func(t *testing.T) {
-		tx := &txMock{}
-		xsrf := &xsrfValidatorMock{}
-		userFoC := &userFindOrCreatorMock{}
+		validator := &sessionValidatorMock{}
+		fetcher := &userFetcherMock{}
 		issuer := &issuerMock{}
 
-		xsrfToken := "signin.xsrf.123"
+		session := model.Session{
+			ID:      "singin.session.id.123",
+			Value:   "signin.session.value.123",
+			Created: 1600000000,
+			Expires: 1600000100,
+		}
 
 		user := model.User{
 			ID:      "signin.user.123",
@@ -31,14 +35,11 @@ func TestSignIn(t *testing.T) {
 			RefreshExpires: 1640000020,
 		}
 
-		tx.Default()
-		xsrf.On("Validate", xsrfToken).Return(nil)
-		userFoC.On("FindOrCreate", user.Name).Return(user, nil)
 		issuer.On("Issue", user).Return(token, nil)
 
-		cmd := auth.NewSignIner(tx, xsrf, userFoC, issuer)
+		cmd := auth.NewSignIner(validator, fetcher, issuer)
 
-		result, err := cmd.SignIn(xsrfToken, user.Name)
+		result, err := cmd.SignIn(session.ID, nil)
 		require.NoError(t, err)
 		require.Equal(t, token, result)
 	})

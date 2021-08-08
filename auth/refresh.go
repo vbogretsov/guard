@@ -74,20 +74,11 @@ func NewRefresher(timer Timer, tx repo.Transaction, tokens repo.RefreshTokens, i
 func (c *refresher) Refresh(refreshToken string) (Token, error) {
 	var empty Token
 
-	if err := c.tx.Begin(); err != nil {
-		return empty, err
-	}
-	defer c.tx.Close()
-
 	old, err := c.tokens.Find(refreshToken)
 	if err != nil {
 		if errors.Is(err, repo.ErrorNotFound) {
 			return empty, Error{msg: "invalid token"}
 		}
-		return empty, err
-	}
-
-	if err := c.tokens.Delete(old.ID); err != nil {
 		return empty, err
 	}
 
@@ -97,10 +88,6 @@ func (c *refresher) Refresh(refreshToken string) (Token, error) {
 
 	token, err := c.issuer.Issue(old.User)
 	if err != nil {
-		return empty, err
-	}
-
-	if err := c.tx.Commit(); err != nil {
 		return empty, err
 	}
 

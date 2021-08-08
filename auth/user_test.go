@@ -4,6 +4,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/markbates/goth"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 
@@ -54,6 +55,21 @@ func (m *userFindOrCreatorMock) FindOrCreate(username string) (model.User, error
 	return value.(model.User), args.Error(1)
 }
 
+type userFetcherMock struct {
+	mock.Mock
+}
+
+func (m *userFetcherMock) Fetch(rawsess string, params goth.Params) (model.User, error) {
+	args := m.Called(rawsess, params)
+
+	user := args.Get(0)
+	if user == nil {
+		return model.User{}, args.Error(1)
+	}
+
+	return user.(model.User), args.Error(1)
+}
+
 func TestUserProvideCommand(t *testing.T) {
 	t.Run("New", func(t *testing.T) {
 		um := &usersMock{}
@@ -69,7 +85,7 @@ func TestUserProvideCommand(t *testing.T) {
 		um.On("Create", mock.MatchedBy(matchUser(user))).
 			Return(nil)
 
-		svc := auth.NewFindOrCreator(um, tm)
+		svc := auth.NewUserFindOrCreator(um, tm)
 
 		result, err := svc.FindOrCreate(user.Name)
 		require.NoError(t, err)
@@ -87,7 +103,7 @@ func TestUserProvideCommand(t *testing.T) {
 
 		um.On("Find", user.Name).Return(user, nil)
 
-		svc := auth.NewFindOrCreator(um, tm)
+		svc := auth.NewUserFindOrCreator(um, tm)
 
 		result, err := svc.FindOrCreate(user.Name)
 		require.NoError(t, err)

@@ -1,0 +1,48 @@
+version: '3.8'
+
+services:
+
+  db:
+    image: postgres:13
+    container_name: guard-db
+    ports:
+    - 5432:5432
+    environment:
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      DB_NAME: ${DB_NAME}
+      DB_USER: ${DB_USER}
+      DB_PASS: ${DB_PASS}
+    volumes:
+    - ./.local/db:/docker-entrypoint-initdb.d
+    - data:/var/lib/postgresql/data
+
+  dbmigrate:
+    image: vbogretsov/guard-dbmigrate:${VERSION}
+    container_name: guard-dbmigrate
+    restart: on-failure
+    build:
+      context: migrations
+    environment:
+      LOGIND_DSN: postgres://${DB_USER}:${DB_PASS}@db/${DB_NAME}?sslmode=disable
+    depends_on:
+    - db
+
+  app:
+    image: vbogretsov/guard:${VERSION}
+    container_name: guard
+    build:
+      context: .
+      args:
+        VERSION: ${VERSION}
+    environment:
+      GUARD_DSN: postgres://${DB_USER}:${DB_PASS}@db/${DB_NAME}?sslmode=disable
+      GUARD_SECRET_KEY: ${GUARD_SECRET_KEY}
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID}
+      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET}
+    ports:
+    - 8000:8000
+    depends_on:
+    - dbmigrate
+
+volumes:
+  data:
