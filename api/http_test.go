@@ -251,3 +251,60 @@ func TestHttpSignIn(t *testing.T) {
 		require.ErrorIs(t, err, fail)
 	})
 }
+
+func TestHttpRefresh(t *testing.T) {
+	t.Run("Success", func(t *testing.T) {
+		refreshToken := "refresh.123"
+
+		form := make(url.Values)
+		form.Set("refresh_token", refreshToken)
+
+		ctx := newctx("/refresh")
+
+		token := auth.Token{
+			IssuedAt:       1600000000,
+			Access:         "access.123",
+			AccessExpires:  1600000050,
+			Refresh:        "refresh.456",
+			RefreshExpires: 1600000100,
+		}
+
+		ctx.refresher.On("Refresh", refreshToken).Return(token, nil)
+		ctx.req.Form = form
+
+		err := ctx.handler.Refresh(ctx.c)
+		require.NoError(t, err)
+
+		var value auth.Token
+		require.NoError(t, json.Unmarshal(ctx.rec.Body.Bytes(), &value))
+		require.Equal(t, token, value)
+	})
+
+	t.Run("Expired", func(t *testing.T) {
+		refreshToken := "refresh.123"
+
+		form := make(url.Values)
+		form.Set("refresh_token", refreshToken)
+
+		ctx := newctx("/refresh")
+
+		fail := auth.Error{}
+		ctx.refresher.On("Refresh", refreshToken).Return(nil, fail)
+		ctx.req.Form = form
+
+		err := ctx.handler.Refresh(ctx.c)
+		require.Error(t, err)
+		require.ErrorIs(t, err, fail)
+	})
+
+	t.Run("Invalid", func(t *testing.T) {
+		ctx := newctx("/refresh")
+
+		fail := auth.Error{}
+		ctx.refresher.On("Refresh", "").Return(nil, fail)
+
+		err := ctx.handler.Refresh(ctx.c)
+		require.Error(t, err)
+		require.ErrorIs(t, err, fail)
+	})
+}
