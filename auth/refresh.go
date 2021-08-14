@@ -8,8 +8,6 @@ import (
 	"github.com/vbogretsov/guard/repo"
 )
 
-const refreshTokenLen = 128
-
 type RefreshTokenCreator interface {
 	Create(user model.User) (model.RefreshToken, error)
 }
@@ -29,15 +27,10 @@ func NewRefreshTokenCreator(tokens repo.RefreshTokens, timer Timer, ttl time.Dur
 }
 
 func (c *refreshTokenCreator) Create(user model.User) (model.RefreshToken, error) {
-	refreshID, err := generateRandomString(refreshTokenLen)
-	if err != nil {
-		return model.RefreshToken{}, err
-	}
-
 	now := c.timer.Now()
 
 	token := model.RefreshToken{
-		ID:      refreshID,
+		ID:      generateRandomString(RefreshTokenSize),
 		UserID:  user.ID,
 		User:    user,
 		Created: now.Unix(),

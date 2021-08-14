@@ -13,27 +13,38 @@ var header = fmt.Sprintf("guard -- authentication microservice (%s)\n", Version)
 const usage = `
 Configuration environment variables:
 
-	LOGIND_PORT
+	GUARD_PORT
 		TCP port to listen. Default: 8000
-	LOGIND_DSN
+	GUARD_DSN
 		Database connection string. Required.
 		Example: postgres://username:password@host:port/database
-	LOGIND_SECRET_KEY
+	GUARD_SECRET_KEY
 		Secret key used for tokens encryption.
-	LOGIND_ACCESS_TTL
+	GUARD_ACCESS_TTL
 		Access token TTL. Default 300s
-	LOGIND_REFRESH_TTL
+	GUARD_REFRESH_TTL
 		Refresh token TTL. Default 86400s
-	LOGIND_CALLBACK_URL
+	GUARD_CALLBACK_URL
 		Callback URL used during OAuth authentication process.
 		Default: http://localhost:8000/callback
 
-OAuth providers environment variables:
+Wellknown OAuth providers environment variables:
 
-	GOOGLE_CLIENT_ID
-		Google client ID
-	GOOGLE_CLIENT_SECRET
-		Google client secret
+	APPLE_CLIENT_ID, APPLE_CLIENT_SECRET       -- Apple
+	GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET     -- Google
+	FACEBOOK_CLIENT_ID, FACEBOOK_CLIENT_SECRET -- Facebook
+	TWITTER_CLIENT_ID, TWITTER_CLIENT_SECRET   -- Twitter
+	VK_CLIENT_ID, VK_CLIENT_SECRET             -- Vk
+	YANDEX_CLIENT_ID, YANDEX_CLIENT_SECRET     -- Yandex
+
+Custom OIDC providers variables can also be passed:
+
+	PROVIDER_1_OIDC_CLIENT_ID, PROVIDER_1_OIDC_CLIENT_SECRET
+	...
+	PROVIDER_N_OIDC_CLIENT_ID, PROVIDER_N_OIDC_CLIENT_SECRET
+
+where PROVIDER_1, ..., PROVIDER_N -- just any prefixes used to group client id
+and client secret for a particular provider.
 `
 
 func init() {

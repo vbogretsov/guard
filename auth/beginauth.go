@@ -8,8 +8,6 @@ import (
 	"github.com/vbogretsov/guard/repo"
 )
 
-const codeLen = 128
-
 type OAuthStarter interface {
 	StartOAuth() (string, error)
 }
@@ -31,10 +29,7 @@ func NewOAuthStarter(ttl time.Duration, timer Timer, sessions repo.Sessions, pro
 }
 
 func (c *oauthStarter) StartOAuth() (string, error) {
-	code, err := generateRandomString(codeLen)
-	if err != nil {
-		return "", err
-	}
+	code := generateRandomString(SessionIDSize)
 
 	sess, err := c.provider.BeginAuth(code)
 	if err != nil {

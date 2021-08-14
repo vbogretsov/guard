@@ -43,23 +43,12 @@ func TestStartOAuth(t *testing.T) {
 	t.Run("BeginAuthFailed", func(t *testing.T) {
 		ttl := 30 * time.Second
 		timer := &timerMock{value: time.Now()}
-		// gSession := &sessionMock{}
 		sessions := &sessionsMock{}
 		provider := &providerMock{}
 
-		// session := model.Session{
-		// 	Value:   "beginauth.session.value",
-		// 	Created: timer.Now().Unix(),
-		// 	Expires: timer.Now().Add(ttl).Unix(),
-		// }
-
-		// authURL := "http://auth.url"
 		fail := errors.New("xxx")
 
 		provider.On("BeginAuth", mock.Anything).Return(nil, fail)
-		// gSession.On("Marshal").Return(session.Value)
-		// gSession.On("GetAuthURL").Return(authURL, nil)
-		// sessions.On("Create", mock.MatchedBy(matchSession(session))).Return(nil)
 
 		cmd := auth.NewOAuthStarter(ttl, timer, sessions, provider)
 
@@ -81,13 +70,11 @@ func TestStartOAuth(t *testing.T) {
 			Expires: timer.Now().Add(ttl).Unix(),
 		}
 
-		// authURL := "http://auth.url"
 		fail := errors.New("xxx")
 
 		provider.On("BeginAuth", mock.Anything).Return(gSession, nil)
 		gSession.On("Marshal").Return(session.Value)
 		sessions.On("Create", mock.Anything).Return(fail)
-		// gSession.On("GetAuthURL").Return(authURL, nil)
 
 		cmd := auth.NewOAuthStarter(ttl, timer, sessions, provider)
 

@@ -75,12 +75,7 @@ func (c *userFindOrCreator) FindOrCreate(username string) (model.User, error) {
 			return user, err
 		}
 
-		uid, err := generateRandomString(uidLen)
-		if err != nil {
-			return user, err
-		}
-
-		user.ID = uid
+		user.ID = generateRandomString(UserIDSize)
 		user.Name = username
 		user.Created = c.timer.Now().Unix()
 

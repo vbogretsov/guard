@@ -7,6 +7,12 @@ import (
 	"github.com/markbates/goth"
 )
 
+const (
+	UserIDSize       = 32
+	RefreshTokenSize = 64
+	SessionIDSize    = 64
+)
+
 var signingMethod = jwt.SigningMethodHS256
 
 type Error struct {

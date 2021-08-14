@@ -1,10 +1,12 @@
 package api
 
 import (
+	"errors"
 	"net/http"
 
 	"github.com/labstack/echo/v4"
 	"github.com/markbates/goth"
+
 	"github.com/vbogretsov/guard/auth"
 )
 
@@ -12,6 +14,22 @@ var (
 	ErrUnexpectedProvider = echo.NewHTTPError(http.StatusBadRequest, "unexpected provider")
 	ErrMissingCode        = echo.NewHTTPError(http.StatusBadRequest, "missing code")
 )
+
+func ErrorHandler(err error, c echo.Context) {
+	if errors.As(err, &auth.Error{}) {
+		err = &echo.HTTPError{Code: http.StatusUnauthorized, Message: err}
+	}
+	c.Echo().DefaultHTTPErrorHandler(err, c)
+}
+
+func Setup(e *echo.Echo, h *HttpAPI) {
+
+	e.GET("/:provider/callback", h.Callback)
+	e.GET("/:provider", h.StartOAuth)
+	e.POST("/refresh", h.Refresh)
+
+	e.HTTPErrorHandler = ErrorHandler
+}
 
 type HttpAPI struct {
 	factory auth.Factory
