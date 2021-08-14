@@ -49,12 +49,14 @@ func run() error {
 		return c.NoContent(http.StatusOK)
 	})
 
-	api.Setup(e, NewFactory(db, FactoryConfig{
+	httpAPI := api.NewHttpAPI(NewFactory(db, FactoryConfig{
 		SecretKey:  cfg.SecretKey,
 		AccessTTL:  cfg.AccessTTL,
 		RefreshTTL: cfg.RefreshTTL,
 		CodeTTL:    cfg.CodeTTL,
 	}))
+
+	api.Setup(e, httpAPI)
 
 	exit := make(chan error)
 	go func() {
