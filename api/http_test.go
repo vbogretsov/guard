@@ -120,11 +120,9 @@ func newctx(path string) *context {
 	}
 }
 
-func init() {
-	goth.UseProviders(google.New("google_id", "google_secret", "http://localhost:8000/google/callback"))
-}
-
 func TestErrorhandler(t *testing.T) {
+	goth.UseProviders(google.New("google_id", "google_secret", "http://localhost:8000/google/callback"))
+
 	t.Run("401", func(t *testing.T) {
 		ctx := newctx("/")
 		api.ErrorHandler(auth.Error{}, ctx.c)
@@ -184,9 +182,13 @@ func TestHttpStartOAuth(t *testing.T) {
 		require.Error(t, err)
 		require.ErrorIs(t, err, fail)
 	})
+
+	goth.ClearProviders()
 }
 
 func TestHttpSignIn(t *testing.T) {
+	goth.UseProviders(google.New("google_id", "google_secret", "http://localhost:8000/google/callback"))
+
 	t.Run("Success", func(t *testing.T) {
 		code := "signin123"
 		q := make(url.Values)
@@ -250,9 +252,13 @@ func TestHttpSignIn(t *testing.T) {
 		require.Error(t, err)
 		require.ErrorIs(t, err, fail)
 	})
+
+	goth.ClearProviders()
 }
 
 func TestHttpRefresh(t *testing.T) {
+	goth.UseProviders(google.New("google_id", "google_secret", "http://localhost:8000/google/callback"))
+
 	t.Run("Success", func(t *testing.T) {
 		refreshToken := "refresh.123"
 
@@ -307,4 +313,6 @@ func TestHttpRefresh(t *testing.T) {
 		require.Error(t, err)
 		require.ErrorIs(t, err, fail)
 	})
+
+	goth.ClearProviders()
 }

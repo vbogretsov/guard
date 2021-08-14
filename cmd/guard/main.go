@@ -22,7 +22,7 @@ import (
 	"github.com/vbogretsov/guard/api"
 )
 
-func run() error {
+func run(sig chan os.Signal) error {
 	cfg := Conf{}
 	if err := env.Parse(&cfg); err != nil {
 		return fmt.Errorf("failed to parse env: %w", err)
@@ -63,7 +63,6 @@ func run() error {
 		exit <- e.Start(fmt.Sprintf(":%d", cfg.Port))
 	}()
 
-	sig := make(chan os.Signal, 1)
 	signal.Notify(sig, syscall.SIGTERM)
 	<-sig
 
@@ -83,7 +82,8 @@ func run() error {
 func main() {
 	flag.Parse()
 
-	if err := run(); err != nil {
+	sig := make(chan os.Signal, 1)
+	if err := run(sig); err != nil {
 		fmt.Printf("error: %v\n", err)
 		os.Exit(1)
 	}
