@@ -105,7 +105,7 @@ func addProviders(providers []provider, environ []string) []provider {
 	return providers
 }
 
-func useProviders(cfg *Conf) {
+func useProviders(cfg Conf) {
 	for _, p := range addProviders(providers, os.Environ()) {
 		clientID := p.clientID(cfg)
 		if clientID == "" {

@@ -38,7 +38,7 @@ func run(sig chan os.Signal) error {
 
 	zerolog.SetGlobalLevel(logLevel)
 
-	useProviders(&cfg)
+	useProviders(cfg)
 
 	e := echo.New()
 	e.Debug = cfg.Debug
