@@ -192,7 +192,7 @@ func TestHttpSignIn(t *testing.T) {
 	t.Run("Success", func(t *testing.T) {
 		code := "signin123"
 		q := make(url.Values)
-		q.Set("code", code)
+		q.Set("state", code)
 
 		ctx := newctx("/:provider/callback/?" + q.Encode())
 		ctx.c.SetParamNames("provider")
@@ -239,7 +239,7 @@ func TestHttpSignIn(t *testing.T) {
 	t.Run("InternalError", func(t *testing.T) {
 		code := "signin123"
 		q := make(url.Values)
-		q.Set("code", code)
+		q.Set("state", code)
 
 		ctx := newctx("/:provider/callback/?" + q.Encode())
 		ctx.c.SetParamNames("provider")

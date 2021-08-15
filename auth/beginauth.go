@@ -1,6 +1,7 @@
 package auth
 
 import (
+	"fmt"
 	"time"
 
 	"github.com/markbates/goth"
@@ -33,7 +34,7 @@ func (c *oauthStarter) StartOAuth() (string, error) {
 
 	sess, err := c.provider.BeginAuth(code)
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("provider begin auth failed: %w", err)
 	}
 
 	now := c.timer.Now()
@@ -51,7 +52,7 @@ func (c *oauthStarter) StartOAuth() (string, error) {
 
 	url, err := sess.GetAuthURL()
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("unable to get auth url: %w", err)
 	}
 
 	return url, nil

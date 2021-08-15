@@ -204,13 +204,15 @@ func TestUserFetcher(t *testing.T) {
 		rawsess := "user.session.value.123"
 
 		provider.On("UnmarshalSession", rawsess).Return(session, nil)
-		session.On("Authorize", provider, params).Return(nil, errors.New("xxx"))
+
+		fail := errors.New("xxx")
+		session.On("Authorize", provider, params).Return(nil, fail)
 
 		cmd := auth.NewUserFetcher(provider, userFoC)
 
 		_, err := cmd.Fetch(rawsess, params)
 		require.Error(t, err)
-		require.ErrorAs(t, err, &auth.Error{})
+		require.ErrorIs(t, err, fail)
 	})
 
 	t.Run("FailOnFetch", func(t *testing.T) {

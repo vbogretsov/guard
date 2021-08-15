@@ -36,7 +36,7 @@ func TestIntegration(t *testing.T) {
 		break
 	}
 
-	require.Equal(t, ok, true, "server not started in %d seconds", wait)
+	require.Equal(t, true, ok, "server not started in %d seconds", wait)
 
 	sig <- syscall.SIGTERM
 

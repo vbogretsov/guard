@@ -18,6 +18,7 @@ import (
 	"github.com/ziflex/lecho"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
+	"gorm.io/gorm/logger"
 
 	"github.com/vbogretsov/guard/api"
 )
@@ -30,7 +31,10 @@ func run(sig chan os.Signal) error {
 
 	useProviders(&cfg)
 
-	db, err := gorm.Open(postgres.Open(cfg.DSN), &gorm.Config{})
+	db, err := gorm.Open(postgres.Open(cfg.DSN), &gorm.Config{
+		Logger: logger.Default.LogMode(logger.Silent),
+	})
+
 	if err != nil {
 		return fmt.Errorf("failed to connect database: %w", err)
 	}

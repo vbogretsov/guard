@@ -45,12 +45,14 @@ func (h *HttpAPI) Callback(c echo.Context) error {
 		return ErrUnexpectedProvider
 	}
 
-	code := c.QueryParam("code")
-	if code == "" {
+	state := c.QueryParam("state")
+	if state == "" {
 		return ErrMissingCode
 	}
 
-	token, err := h.factory.NewSignIner(provider).SignIn(code, nil)
+	params := c.Request().URL.Query()
+
+	token, err := h.factory.NewSignIner(provider).SignIn(state, params)
 	if err != nil {
 		return err
 	}

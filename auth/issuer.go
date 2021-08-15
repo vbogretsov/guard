@@ -1,6 +1,7 @@
 package auth
 
 import (
+	"fmt"
 	"time"
 
 	"github.com/golang-jwt/jwt"
@@ -51,7 +52,7 @@ func (c *issuer) Issue(user model.User) (Token, error) {
 	})
 
 	if err != nil {
-		return token, err
+		return token, fmt.Errorf("jwt encoding failed: %w", err)
 	}
 
 	token.IssuedAt = now.Unix()

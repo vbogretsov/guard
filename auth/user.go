@@ -2,6 +2,7 @@ package auth
 
 import (
 	"errors"
+	"fmt"
 
 	"github.com/markbates/goth"
 
@@ -32,17 +33,17 @@ func (c *userFetcher) Fetch(rawsess string, params goth.Params) (model.User, err
 
 	session, err := c.provider.UnmarshalSession(rawsess)
 	if err != nil {
-		return empty, err
+		return empty, fmt.Errorf("session unmarshal failed: %w", err)
 	}
 
 	_, err = session.Authorize(c.provider, params)
 	if err != nil {
-		return empty, Error{msg: "unauthorized"}
+		return empty, fmt.Errorf("provider authorization failed: %w", err)
 	}
 
 	gUser, err := c.provider.FetchUser(session)
 	if err != nil {
-		return empty, err
+		return empty, fmt.Errorf("fetch user from provider failed: %w", err)
 	}
 
 	user, err := c.users.FindOrCreate(gUser.Email)
