@@ -32,11 +32,11 @@ func TestAddProviders(t *testing.T) {
 		})
 
 		require.Equal(t, ps[0].name, "P1")
-		require.Equal(t, ps[0].clientID(nil), "p1-id")
-		require.Equal(t, ps[0].clientSecret(nil), "p1-secret")
+		require.Equal(t, ps[0].clientID(Conf{}), "p1-id")
+		require.Equal(t, ps[0].clientSecret(Conf{}), "p1-secret")
 		require.Equal(t, ps[1].name, "P2")
-		require.Equal(t, ps[1].clientID(nil), "p2-id")
-		require.Equal(t, ps[1].clientSecret(nil), "p2-secret")
+		require.Equal(t, ps[1].clientID(Conf{}), "p2-id")
+		require.Equal(t, ps[1].clientSecret(Conf{}), "p2-secret")
 	})
 
 }
@@ -50,7 +50,7 @@ func TestUseProviders(t *testing.T) {
 
 	zerolog.SetGlobalLevel(zerolog.Disabled)
 
-	useProviders(&cfg)
+	useProviders(cfg)
 
 	g, err := goth.GetProvider("google")
 	require.NoError(t, err)
