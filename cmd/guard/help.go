@@ -15,6 +15,20 @@ Configuration environment variables:
 
 	GUARD_PORT
 		TCP port to listen. Default: 8000
+	GUARD_LOG_LEVEL
+		Log level. Default: info.
+		Supported values: trace, debug, info, warn, error, fatal, panic
+	GUARD_DBDRIVER
+		Database driver name. Default: sqlite.
+		Supported values: postgres, mysql, clickhouse, sqlite.
+	GUARD_DB_MAX_IDDLE_CONN
+		Max number of iddle database connections. Default: 16.
+	GUARD_DB_MAX_OPEN_CONN
+		Max number of open database connections. Default: 128.
+	GUARD_DB_CONN_MAX_LIFETIME
+		Max lifetime of an open database connection. Default: 3600s.
+	GUARD_DB_CONN_MAX_IDDLE_TIME
+		Max lifetime of an iddle database connection. Default: 300s.
 	GUARD_DSN
 		Database connection string. Required.
 		Example: postgres://username:password@host:port/database

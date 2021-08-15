@@ -16,9 +16,6 @@ import (
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 	"github.com/ziflex/lecho"
-	"gorm.io/driver/postgres"
-	"gorm.io/gorm"
-	"gorm.io/gorm/logger"
 
 	"github.com/vbogretsov/guard/api"
 )
@@ -29,17 +26,19 @@ func run(sig chan os.Signal) error {
 		return fmt.Errorf("failed to parse env: %w", err)
 	}
 
-	useProviders(&cfg)
-
-	db, err := gorm.Open(postgres.Open(cfg.DSN), &gorm.Config{
-		Logger: logger.Default.LogMode(logger.Silent),
-	})
-
+	db, err := dbconnect(cfg)
 	if err != nil {
 		return fmt.Errorf("failed to connect database: %w", err)
 	}
 
-	zerolog.SetGlobalLevel(zerolog.DebugLevel)
+	logLevel, err := zerolog.ParseLevel(cfg.LogLevel)
+	if err != nil {
+		return fmt.Errorf("unable to parse log level: %w", err)
+	}
+
+	zerolog.SetGlobalLevel(logLevel)
+
+	useProviders(&cfg)
 
 	e := echo.New()
 	e.Debug = cfg.Debug

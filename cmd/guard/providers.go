@@ -16,6 +16,12 @@ import (
 	"github.com/rs/zerolog/log"
 )
 
+const (
+	oidcIdSuffix = "_OIDC_CLIENT_ID"
+	/* #nosec G101 */
+	oidcSecretSuffix = "_OIDC_CLIENT_SECRET"
+)
+
 type provider struct {
 	name         string
 	ctor         func(string, string, string) goth.Provider
@@ -80,11 +86,8 @@ func addProviders(providers []provider, environ []string) []provider {
 		envs[kv[0]] = kv[1]
 	}
 
-	idKey := "_OIDC_CLIENT_ID"
-	secretKey := "_OIDC_CLIENT_SECRET"
-
 	for k := range envs {
-		ind := strings.Index(k, idKey)
+		ind := strings.Index(k, oidcIdSuffix)
 		if ind == -1 {
 			continue
 		}
@@ -94,8 +97,8 @@ func addProviders(providers []provider, environ []string) []provider {
 		providers = append(providers, provider{
 			name:         k[:ind],
 			ctor:         newOpenIDProvider,
-			clientID:     func(cfg *Conf) string { return envs[name+idKey] },
-			clientSecret: func(cfg *Conf) string { return envs[name+secretKey] },
+			clientID:     func(cfg *Conf) string { return envs[name+oidcIdSuffix] },
+			clientSecret: func(cfg *Conf) string { return envs[name+oidcSecretSuffix] },
 		})
 	}
 
