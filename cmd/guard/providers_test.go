@@ -22,6 +22,7 @@ func TestAddProviders(t *testing.T) {
 			"P1_OIDC_CLIENT_SECRET=p1-secret",
 			"P2_OIDC_CLIENT_ID=p2-id",
 			"P2_OIDC_CLIENT_SECRET=p2-secret",
+			"P3_OIDC_CLIENT_ID=p3-id",
 		}
 
 		ps := addProviders(nil, environ)
@@ -43,10 +44,19 @@ func TestAddProviders(t *testing.T) {
 
 func TestUseProviders(t *testing.T) {
 	cfg := Conf{
-		BaseURL:          "http://localhost:8000",
-		GoogleClientID:   "google-id",
-		GoogleSecret:     "google-secret",
-		FacebookClientID: "facebook-id",
+		BaseURL:           "http://localhost:8000",
+		AppleClientID:     "apple-id",
+		AppleClientSecret: "apple-secret",
+		GoogleClientID:    "google-id",
+		GoogleSecret:      "google-secret",
+		FacebookClientID:  "facebook-id",
+		FacebookSecret:    "faacebook-secret",
+		TwitterClientID:   "twitter-id",
+		TwitterSecret:     "twitter-secret",
+		VkClientID:        "vk-id",
+		VkSecret:          "vk-secret",
+		YandexClientID:    "yandex-id",
+		YandexSecret:      "yandex-secret",
 	}
 
 	zerolog.SetGlobalLevel(zerolog.Disabled)
