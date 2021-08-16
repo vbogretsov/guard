@@ -10,8 +10,6 @@ import (
 	"github.com/vbogretsov/guard/repo"
 )
 
-const uidLen = 64
-
 type UserFetcher interface {
 	Fetch(session string, params goth.Params) (model.User, error)
 }
