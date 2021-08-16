@@ -43,9 +43,10 @@ func TestAddProviders(t *testing.T) {
 
 func TestUseProviders(t *testing.T) {
 	cfg := Conf{
-		BaseURL:        "http://localhost:8000",
-		GoogleClientID: "google-id",
-		GoogleSecret:   "google-secret",
+		BaseURL:          "http://localhost:8000",
+		GoogleClientID:   "google-id",
+		GoogleSecret:     "google-secret",
+		FacebookClientID: "facebook-id",
 	}
 
 	zerolog.SetGlobalLevel(zerolog.Disabled)
