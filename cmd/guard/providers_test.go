@@ -27,7 +27,7 @@ func TestAddProviders(t *testing.T) {
 		}
 
 		ps := addProviders(nil, environ)
-		require.Equal(t, len(ps), 2)
+		require.Equal(t, len(ps), 3)
 
 		sort.Slice(ps, func(i, j int) bool {
 			return strings.Compare(ps[i].name, ps[j].name) < 1
@@ -39,6 +39,9 @@ func TestAddProviders(t *testing.T) {
 		require.Equal(t, ps[1].name, "P2")
 		require.Equal(t, ps[1].clientID(Conf{}), "p2-id")
 		require.Equal(t, ps[1].clientSecret(Conf{}), "p2-secret")
+		require.Equal(t, ps[2].name, "P3")
+		require.Equal(t, ps[2].clientID(Conf{}), "p3-id")
+		require.Equal(t, ps[2].clientSecret(Conf{}), "")
 	})
 
 }
@@ -64,11 +67,27 @@ func TestUseProviders(t *testing.T) {
 
 	useProviders(cfg)
 
+	a, err := goth.GetProvider("apple")
+	require.NoError(t, err)
+	require.NotNil(t, a)
+
 	g, err := goth.GetProvider("google")
 	require.NoError(t, err)
 	require.NotNil(t, g)
-	require.Equal(t, g.Name(), "google")
 
-	_, err = goth.GetProvider("facebook")
-	require.Error(t, err)
+	f, err := goth.GetProvider("facebook")
+	require.NoError(t, err)
+	require.NotNil(t, f)
+
+	tw, err := goth.GetProvider("twitter")
+	require.NoError(t, err)
+	require.NotNil(t, tw)
+
+	v, err := goth.GetProvider("vk")
+	require.NoError(t, err)
+	require.NotNil(t, v)
+
+	y, err := goth.GetProvider("yandex")
+	require.NoError(t, err)
+	require.NotNil(t, y)
 }
