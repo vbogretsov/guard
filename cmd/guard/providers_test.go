@@ -23,6 +23,7 @@ func TestAddProviders(t *testing.T) {
 			"P2_OIDC_CLIENT_ID=p2-id",
 			"P2_OIDC_CLIENT_SECRET=p2-secret",
 			"P3_OIDC_CLIENT_ID=p3-id",
+			"OIDC_CLIENT_ID",
 		}
 
 		ps := addProviders(nil, environ)
