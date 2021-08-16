@@ -7,8 +7,8 @@ type Conf struct {
 	Port               int           `env:"GUARD_PORT" envDefault:"8000"`
 	LogLevel           string        `env:"GUARD_LOG_LEVEL" envDefault:"info"`
 	DBDriver           string        `env:"GUARD_DBDRIVER" envDefault:"sqlite"`
-	DBMaxIddleConn     int           `env:"GUARD_DB_MAX_IDDLE_CONN" envDefault:16`
-	DBMaxOpenConn      int           `env:"GUARD_DB_MAX_OPEN_CONN" envDefault:128`
+	DBMaxIddleConn     int           `env:"GUARD_DB_MAX_IDDLE_CONN" envDefault:"16"`
+	DBMaxOpenConn      int           `env:"GUARD_DB_MAX_OPEN_CONN" envDefault:"128"`
 	DBConnMaxLifetime  time.Duration `env:"GUARD_DB_CONN_MAX_LIFETIME" envDefault:"3600s"`
 	DBConnMaxIddleTime time.Duration `env:"GUARD_DB_CONN_MAX_IDDLE_TIME" envDefault:"300s"`
 	DSN                string        `env:"GUARD_DSN,required"`

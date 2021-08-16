@@ -25,46 +25,46 @@ const (
 type provider struct {
 	name         string
 	ctor         func(string, string, string) goth.Provider
-	clientID     func(cfg *Conf) string
-	clientSecret func(cfg *Conf) string
+	clientID     func(cfg Conf) string
+	clientSecret func(cfg Conf) string
 }
 
 var providers = []provider{
 	{
 		name:         "apple",
 		ctor:         func(id, secret, url string) goth.Provider { return apple.New(id, secret, url, nil) },
-		clientID:     func(cfg *Conf) string { return cfg.AppleClientID },
-		clientSecret: func(cfg *Conf) string { return cfg.AppleClientSecret },
+		clientID:     func(cfg Conf) string { return cfg.AppleClientID },
+		clientSecret: func(cfg Conf) string { return cfg.AppleClientSecret },
 	},
 	{
 		name:         "google",
 		ctor:         func(id, secret, url string) goth.Provider { return google.New(id, secret, url) },
-		clientID:     func(cfg *Conf) string { return cfg.GoogleClientID },
-		clientSecret: func(cfg *Conf) string { return cfg.GoogleSecret },
+		clientID:     func(cfg Conf) string { return cfg.GoogleClientID },
+		clientSecret: func(cfg Conf) string { return cfg.GoogleSecret },
 	},
 	{
 		name:         "facebook",
 		ctor:         func(id, secret, url string) goth.Provider { return facebook.New(id, secret, url) },
-		clientID:     func(cfg *Conf) string { return cfg.FacebookClientID },
-		clientSecret: func(cfg *Conf) string { return cfg.FacebookSecret },
+		clientID:     func(cfg Conf) string { return cfg.FacebookClientID },
+		clientSecret: func(cfg Conf) string { return cfg.FacebookSecret },
 	},
 	{
 		name:         "twitter",
 		ctor:         func(id, secret, url string) goth.Provider { return twitter.New(id, secret, url) },
-		clientID:     func(cfg *Conf) string { return cfg.TwitterClientID },
-		clientSecret: func(cfg *Conf) string { return cfg.TwitterSecret },
+		clientID:     func(cfg Conf) string { return cfg.TwitterClientID },
+		clientSecret: func(cfg Conf) string { return cfg.TwitterSecret },
 	},
 	{
 		name:         "vk",
 		ctor:         func(id, secret, url string) goth.Provider { return vk.New(id, secret, url) },
-		clientID:     func(cfg *Conf) string { return cfg.VkClientID },
-		clientSecret: func(cfg *Conf) string { return cfg.VkSecret },
+		clientID:     func(cfg Conf) string { return cfg.VkClientID },
+		clientSecret: func(cfg Conf) string { return cfg.VkSecret },
 	},
 	{
 		name:         "yandex",
 		ctor:         func(id, secret, url string) goth.Provider { return yandex.New(id, secret, url) },
-		clientID:     func(cfg *Conf) string { return cfg.YandexClientID },
-		clientSecret: func(cfg *Conf) string { return cfg.YandexSecret },
+		clientID:     func(cfg Conf) string { return cfg.YandexClientID },
+		clientSecret: func(cfg Conf) string { return cfg.YandexSecret },
 	},
 }
 
@@ -97,15 +97,15 @@ func addProviders(providers []provider, environ []string) []provider {
 		providers = append(providers, provider{
 			name:         k[:ind],
 			ctor:         newOpenIDProvider,
-			clientID:     func(cfg *Conf) string { return envs[name+oidcIdSuffix] },
-			clientSecret: func(cfg *Conf) string { return envs[name+oidcSecretSuffix] },
+			clientID:     func(cfg Conf) string { return envs[name+oidcIdSuffix] },
+			clientSecret: func(cfg Conf) string { return envs[name+oidcSecretSuffix] },
 		})
 	}
 
 	return providers
 }
 
-func useProviders(cfg *Conf) {
+func useProviders(cfg Conf) {
 	for _, p := range addProviders(providers, os.Environ()) {
 		clientID := p.clientID(cfg)
 		if clientID == "" {
