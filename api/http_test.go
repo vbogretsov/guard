@@ -34,6 +34,10 @@ func (m *factoryMock) NewOAuthStarter(provider goth.Provider) auth.OAuthStarter 
 	return m.Called(provider).Get(0).(auth.OAuthStarter)
 }
 
+func (m *factoryMock) NewHealthCheck() api.HealthCheck {
+	return m.Called().Get(0).(api.HealthCheck)
+}
+
 type signinerMock struct {
 	mock.Mock
 }
@@ -86,8 +90,6 @@ type context struct {
 }
 
 func newctx(path string) *context {
-	e := echo.New()
-
 	factory := &factoryMock{}
 	signiner := &signinerMock{}
 	refresher := &refresherMock{}
@@ -99,7 +101,7 @@ func newctx(path string) *context {
 	factory.On("NewRefresher", mock.Anything).Return(refresher)
 	factory.On("NewOAuthStarter", mock.Anything).Return(oauthStarter)
 
-	api.Setup(e, handler)
+	e := api.New(handler)
 
 	req := httptest.NewRequest(http.MethodGet, path, nil)
 	rec := httptest.NewRecorder()
@@ -143,9 +145,13 @@ func TestErrorhandler(t *testing.T) {
 		api.ErrorHandler(api.ErrMissingCode, ctx.c)
 		require.Equal(t, http.StatusBadRequest, ctx.rec.Code)
 	})
+
+	goth.ClearProviders()
 }
 
 func TestHttpStartOAuth(t *testing.T) {
+	goth.UseProviders(google.New("google_id", "google_secret", "http://localhost:8000/google/callback"))
+
 	t.Run("Success", func(t *testing.T) {
 		ctx := newctx("/:provider")
 		ctx.c.SetParamNames("provider")
@@ -315,4 +321,25 @@ func TestHttpRefresh(t *testing.T) {
 	})
 
 	goth.ClearProviders()
+}
+
+func TestHealthCheck(t *testing.T) {
+	t.Run("Success", func(t *testing.T) {
+		ctx := newctx("/health")
+
+		ctx.factory.On("NewHealthCheck").Return(func() error { return nil })
+
+		err := ctx.handler.Health(ctx.c)
+		require.NoError(t, err)
+	})
+	t.Run("Failed", func(t *testing.T) {
+		ctx := newctx("/health")
+
+		fail := errors.New("failed")
+		ctx.factory.On("NewHealthCheck").Return(func() error { return fail })
+
+		err := ctx.handler.Health(ctx.c)
+		require.Error(t, err)
+		require.ErrorIs(t, err, fail)
+	})
 }

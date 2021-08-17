@@ -4,6 +4,8 @@ import (
 	"fmt"
 
 	"github.com/markbates/goth"
+
+	"github.com/vbogretsov/guard/repo"
 )
 
 type SignIner interface {
@@ -11,24 +13,27 @@ type SignIner interface {
 }
 
 type signiner struct {
-	validator SessionValidator
-	fetcher   UserFetcher
-	issuer    Issuer
+	sessions repo.Sessions
+	fetcher  UserFetcher
+	issuer   Issuer
 }
 
-func NewSignIner(validator SessionValidator, fetcher UserFetcher, issuer Issuer) SignIner {
+func NewSignIner(sessions repo.Sessions, fetcher UserFetcher, issuer Issuer) SignIner {
 	return &signiner{
-		validator: validator,
-		fetcher:   fetcher,
-		issuer:    issuer,
+		sessions: sessions,
+		fetcher:  fetcher,
+		issuer:   issuer,
 	}
 }
 
 func (c *signiner) SignIn(state string, params goth.Params) (Token, error) {
 	var empty Token
 
-	session, err := c.validator.Validate(state)
+	session, err := c.sessions.Find(state)
 	if err != nil {
+		if err == repo.ErrorNotFound {
+			return empty, Error{msg: "invalid session"}
+		}
 		return empty, fmt.Errorf("session validation failed: %w", err)
 	}
 

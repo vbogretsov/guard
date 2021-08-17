@@ -1,8 +1,6 @@
 package repo
 
 import (
-	"errors"
-
 	"gorm.io/gorm"
 
 	"github.com/vbogretsov/guard/model"
@@ -33,86 +31,22 @@ type Sessions interface {
 	Delete(code string) error
 }
 
-type GormTx struct {
-	stack []*gorm.DB
-	open  int
-	clos  int
-}
-
-func NewTransaction(db *gorm.DB) *GormTx {
-	return &GormTx{
-		stack: []*gorm.DB{db},
-		open:  0,
-		clos:  0,
-	}
-}
-
-func (tx *GormTx) db() *gorm.DB {
-	return tx.stack[tx.open]
-}
-
-func (tx *GormTx) Begin() error {
-	db := tx.db().Begin()
-	if db.Error != nil {
-		return db.Error
-	}
-
-	tx.stack = append(tx.stack, db)
-	tx.open++
-	tx.clos++
-
-	return nil
-}
-
-func (tx *GormTx) Commit() error {
-	if tx.open == 0 {
-		return errors.New("commit failed because transactoin wasn't started")
-	}
-
-	id := tx.open
-	db := tx.db().Commit()
-	tx.open--
-
-	if db.Error != nil {
-		return db.Error
-	}
-
-	tx.stack[id] = nil
-	return nil
-}
-
-func (tx *GormTx) Close() error {
-	if tx.clos == 0 {
-		return nil
-	}
-
-	if tx.stack[tx.clos] == nil {
-		return nil
-	}
-
-	db := tx.stack[tx.clos].Rollback()
-	tx.clos--
-	tx.open = tx.clos
-
-	return db.Error
-}
-
 type users struct {
-	tx *GormTx
+	db *gorm.DB
 }
 
-func NewUsers(tx *GormTx) Users {
-	return &users{tx: tx}
+func NewUsers(db *gorm.DB) Users {
+	return &users{db: db}
 }
 
 func (u *users) Create(user model.User) error {
-	return u.tx.db().Create(&user).Error
+	return u.db.Create(&user).Error
 }
 
 func (u *users) Find(name string) (model.User, error) {
 	var user model.User
 
-	r := u.tx.db().First(&user, "name = ?", name)
+	r := u.db.First(&user, "name = ?", name)
 	if r.Error != nil {
 		return user, r.Error
 	}
@@ -121,21 +55,21 @@ func (u *users) Find(name string) (model.User, error) {
 }
 
 type refreshTokens struct {
-	tx *GormTx
+	db *gorm.DB
 }
 
-func NewRefreshTokens(tx *GormTx) RefreshTokens {
-	return &refreshTokens{tx: tx}
+func NewRefreshTokens(db *gorm.DB) RefreshTokens {
+	return &refreshTokens{db: db}
 }
 
 func (rt *refreshTokens) Create(token model.RefreshToken) error {
-	return rt.tx.db().Create(&token).Error
+	return rt.db.Create(&token).Error
 }
 
 func (rt *refreshTokens) Find(id string) (model.RefreshToken, error) {
 	var token model.RefreshToken
 
-	r := rt.tx.db().Joins("User").First(&token, "refresh_tokens.id = ?", id)
+	r := rt.db.Joins("User").First(&token, "refresh_tokens.id = ?", id)
 	if r.Error != nil {
 		return token, r.Error
 	}
@@ -145,21 +79,21 @@ func (rt *refreshTokens) Find(id string) (model.RefreshToken, error) {
 
 func (rt *refreshTokens) Delete(id string) error {
 	token := model.RefreshToken{ID: id}
-	return rt.tx.db().Delete(&token).Error
+	return rt.db.Delete(&token).Error
 }
 
 type sessions struct {
-	tx *GormTx
+	db *gorm.DB
 }
 
-func NewSessions(tx *GormTx) Sessions {
-	return &sessions{tx: tx}
+func NewSessions(db *gorm.DB) Sessions {
+	return &sessions{db: db}
 }
 
 func (s *sessions) Find(value string) (model.Session, error) {
 	var sess model.Session
 
-	r := s.tx.db().First(&sess, "id = ?", value)
+	r := s.db.First(&sess, "id = ?", value)
 	if r.Error != nil {
 		return sess, r.Error
 	}
@@ -168,10 +102,10 @@ func (s *sessions) Find(value string) (model.Session, error) {
 }
 
 func (s *sessions) Create(sess model.Session) error {
-	return s.tx.db().Create(&sess).Error
+	return s.db.Create(&sess).Error
 }
 
 func (s *sessions) Delete(code string) error {
 	sess := model.Session{ID: code}
-	return s.tx.db().Delete(&sess).Error
+	return s.db.Delete(&sess).Error
 }

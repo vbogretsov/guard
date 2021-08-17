@@ -6,6 +6,7 @@ import (
 	"github.com/markbates/goth"
 	"gorm.io/gorm"
 
+	"github.com/vbogretsov/guard/api"
 	"github.com/vbogretsov/guard/auth"
 	"github.com/vbogretsov/guard/repo"
 )
@@ -24,7 +25,6 @@ type factory struct {
 
 type scope struct {
 	db       *gorm.DB
-	tx       *repo.GormTx
 	cfg      FactoryConfig
 	timer    auth.Timer
 	users    repo.Users
@@ -32,10 +32,20 @@ type scope struct {
 	sessions repo.Sessions
 }
 
-func NewFactory(db *gorm.DB, cfg FactoryConfig) auth.Factory {
+func NewFactory(db *gorm.DB, cfg FactoryConfig) api.Factory {
 	return &factory{
 		db:  db,
 		cfg: cfg,
+	}
+}
+
+func (f *factory) NewHealthCheck() api.HealthCheck {
+	return func() error {
+		db, err := f.db.DB()
+		if err != nil {
+			return err
+		}
+		return db.Ping()
 	}
 }
 
@@ -62,30 +72,23 @@ func (s *scope) newTimer() auth.Timer {
 	return s.timer
 }
 
-func (s *scope) newTransaction() *repo.GormTx {
-	if s.tx == nil {
-		s.tx = repo.NewTransaction(s.db)
-	}
-	return s.tx
-}
-
 func (s *scope) newUsersRepo() repo.Users {
 	if s.users == nil {
-		s.users = repo.NewUsers(s.newTransaction())
+		s.users = repo.NewUsers(s.db)
 	}
 	return s.users
 }
 
 func (s *scope) newRefreshTokensRepo() repo.RefreshTokens {
 	if s.tokens == nil {
-		s.tokens = repo.NewRefreshTokens(s.newTransaction())
+		s.tokens = repo.NewRefreshTokens(s.db)
 	}
 	return s.tokens
 }
 
 func (s *scope) newSessionsRepo() repo.Sessions {
 	if s.sessions == nil {
-		s.sessions = repo.NewSessions(s.newTransaction())
+		s.sessions = repo.NewSessions(s.db)
 	}
 	return s.sessions
 }

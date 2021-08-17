@@ -15,6 +15,24 @@ var (
 	ErrMissingCode        = echo.NewHTTPError(http.StatusBadRequest, "missing code")
 )
 
+type HealthCheck = func() error
+
+type Factory interface {
+	auth.Factory
+	NewHealthCheck() HealthCheck
+}
+
+func New(h *HttpAPI) *echo.Echo {
+	e := echo.New()
+	e.GET("/:provider/callback", h.Callback)
+	e.GET("/:provider", h.StartOAuth)
+	e.POST("/refresh", h.Refresh)
+	e.GET("/health", h.Health)
+
+	e.HTTPErrorHandler = ErrorHandler
+	return e
+}
+
 func ErrorHandler(err error, c echo.Context) {
 	if errors.As(err, &auth.Error{}) {
 		err = &echo.HTTPError{Code: http.StatusUnauthorized, Message: err}
@@ -22,20 +40,11 @@ func ErrorHandler(err error, c echo.Context) {
 	c.Echo().DefaultHTTPErrorHandler(err, c)
 }
 
-func Setup(e *echo.Echo, h *HttpAPI) {
-
-	e.GET("/:provider/callback", h.Callback)
-	e.GET("/:provider", h.StartOAuth)
-	e.POST("/refresh", h.Refresh)
-
-	e.HTTPErrorHandler = ErrorHandler
-}
-
 type HttpAPI struct {
-	factory auth.Factory
+	factory Factory
 }
 
-func NewHttpAPI(factory auth.Factory) *HttpAPI {
+func NewHttpAPI(factory Factory) *HttpAPI {
 	return &HttpAPI{factory: factory}
 }
 
@@ -83,4 +92,12 @@ func (h *HttpAPI) StartOAuth(c echo.Context) error {
 	}
 
 	return c.Redirect(http.StatusTemporaryRedirect, url)
+}
+
+func (h *HttpAPI) Health(c echo.Context) error {
+	hc := h.factory.NewHealthCheck()
+	if err := hc(); err != nil {
+		return err
+	}
+	return c.NoContent(http.StatusOK)
 }
