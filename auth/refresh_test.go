@@ -46,7 +46,7 @@ func matchRefreshToken(token model.RefreshToken) func(model.RefreshToken) bool {
 	}
 }
 
-func TestRefreshTokenCreator(t *testing.T) {
+func TestRefreshGenerator(t *testing.T) {
 	ttl := 60 * time.Second
 
 	user := model.User{
@@ -68,9 +68,9 @@ func TestRefreshTokenCreator(t *testing.T) {
 
 		rtm.On("Create", mock.MatchedBy(matchRefreshToken(token))).Return(nil)
 
-		cmd := auth.NewRefreshTokenCreator(rtm, tm, ttl)
+		cmd := auth.NewRefreshGenerator(rtm, tm, ttl)
 
-		result, err := cmd.Create(user)
+		result, err := cmd.Generate(user)
 
 		require.NoError(t, err)
 		require.NotEmpty(t, result.ID)
@@ -89,9 +89,9 @@ func TestRefreshTokenCreator(t *testing.T) {
 
 		rtm.On("Create", mock.Anything).Return(fail)
 
-		cmd := auth.NewRefreshTokenCreator(rtm, tm, ttl)
+		cmd := auth.NewRefreshGenerator(rtm, tm, ttl)
 
-		_, err := cmd.Create(user)
+		_, err := cmd.Generate(user)
 
 		require.ErrorIs(t, err, fail)
 	})

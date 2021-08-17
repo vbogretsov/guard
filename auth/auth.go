@@ -3,7 +3,6 @@ package auth
 import (
 	"time"
 
-	"github.com/golang-jwt/jwt"
 	"github.com/markbates/goth"
 )
 
@@ -12,8 +11,6 @@ const (
 	RefreshTokenSize = 64
 	SessionIDSize    = 64
 )
-
-var signingMethod = jwt.SigningMethodHS256
 
 type Error struct {
 	msg string

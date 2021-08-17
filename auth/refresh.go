@@ -8,25 +8,25 @@ import (
 	"github.com/vbogretsov/guard/repo"
 )
 
-type RefreshTokenCreator interface {
-	Create(user model.User) (model.RefreshToken, error)
+type RefreshGenerator interface {
+	Generate(user model.User) (model.RefreshToken, error)
 }
 
-type refreshTokenCreator struct {
+type refreshGenerator struct {
 	tokens repo.RefreshTokens
 	timer  Timer
 	ttl    time.Duration
 }
 
-func NewRefreshTokenCreator(tokens repo.RefreshTokens, timer Timer, ttl time.Duration) RefreshTokenCreator {
-	return &refreshTokenCreator{
+func NewRefreshGenerator(tokens repo.RefreshTokens, timer Timer, ttl time.Duration) RefreshGenerator {
+	return &refreshGenerator{
 		tokens: tokens,
 		timer:  timer,
 		ttl:    ttl,
 	}
 }
 
-func (c *refreshTokenCreator) Create(user model.User) (model.RefreshToken, error) {
+func (c *refreshGenerator) Generate(user model.User) (model.RefreshToken, error) {
 	now := c.timer.Now()
 
 	token := model.RefreshToken{

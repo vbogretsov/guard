@@ -17,27 +17,29 @@ type issuer struct {
 	secret  []byte
 	timer   Timer
 	ttl     time.Duration
-	refresh RefreshTokenCreator
+	refresh RefreshGenerator
+	method  jwt.SigningMethod
 }
 
-func NewIssuer(secret string, timer Timer, ttl time.Duration, refresh RefreshTokenCreator) Issuer {
+func NewIssuer(secret string, timer Timer, ttl time.Duration, method jwt.SigningMethod, refresh RefreshGenerator) Issuer {
 	return &issuer{
 		secret:  []byte(secret),
 		timer:   timer,
 		ttl:     ttl,
+		method:  method,
 		refresh: refresh,
 	}
 }
 
-func encodeJWT(secret []byte, claims map[string]interface{}) (string, error) {
-	token := jwt.NewWithClaims(signingMethod, jwt.MapClaims(claims))
+func encodeJWT(secret []byte, claims map[string]interface{}, method jwt.SigningMethod) (string, error) {
+	token := jwt.NewWithClaims(method, jwt.MapClaims(claims))
 	return token.SignedString(secret)
 }
 
 func (c *issuer) Issue(user model.User) (Token, error) {
 	var token Token
 
-	refresh, err := c.refresh.Create(user)
+	refresh, err := c.refresh.Generate(user)
 	if err != nil {
 		return token, err
 	}
@@ -45,12 +47,13 @@ func (c *issuer) Issue(user model.User) (Token, error) {
 	now := c.timer.Now()
 	exp := now.Add(c.ttl).Unix()
 
-	access, err := encodeJWT(c.secret, map[string]interface{}{
+	claims := map[string]interface{}{
 		"sub": user.Name,
 		"exp": exp,
 		// TODO: add more claims.
-	})
+	}
 
+	access, err := encodeJWT(c.secret, claims, c.method)
 	if err != nil {
 		return token, fmt.Errorf("jwt encoding failed: %w", err)
 	}
