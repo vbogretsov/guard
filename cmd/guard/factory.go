@@ -3,6 +3,7 @@ package main
 import (
 	"time"
 
+	"github.com/golang-jwt/jwt"
 	"github.com/markbates/goth"
 	"gorm.io/gorm"
 
@@ -101,8 +102,8 @@ func (s *scope) newUserFindOrCreator() auth.UserFindOrCreator {
 	)
 }
 
-func (s *scope) newRefreshTokensCreator() auth.RefreshTokenCreator {
-	return auth.NewRefreshTokenCreator(
+func (s *scope) newrefreshGenerator() auth.RefreshGenerator {
+	return auth.NewRefreshGenerator(
 		s.newRefreshTokensRepo(),
 		s.newTimer(),
 		s.cfg.RefreshTTL,
@@ -114,7 +115,8 @@ func (s *scope) newIssuer() auth.Issuer {
 		s.cfg.SecretKey,
 		s.newTimer(),
 		s.cfg.AccessTTL,
-		s.newRefreshTokensCreator(),
+		jwt.SigningMethodHS256,
+		s.newrefreshGenerator(),
 	)
 }
 
