@@ -71,6 +71,14 @@ func (m *userFetcherMock) Fetch(rawsess string, params goth.Params) (model.User,
 	return user.(model.User), args.Error(1)
 }
 
+type updaterMock struct {
+	mock.Mock
+}
+
+func (m *updaterMock) Update(userID string, data map[string]interface{}) error {
+	return m.Called(userID, data).Error(0)
+}
+
 func TestUserFinOrCreator(t *testing.T) {
 	t.Run("New", func(t *testing.T) {
 		um := &usersMock{}
@@ -151,11 +159,13 @@ func TestUserFetcher(t *testing.T) {
 		provider := &providerMock{}
 		session := &sessionMock{}
 		userFoC := &userFindOrCreatorMock{}
+		updater := &updaterMock{}
 
 		rawsess := "user.session.value.123"
 
 		gUser := goth.User{
-			Email: "u1@mail.org",
+			Email:   "u1@mail.org",
+			RawData: map[string]interface{}{"Email": "u1@mail.org"},
 		}
 
 		user := model.User{
@@ -168,8 +178,9 @@ func TestUserFetcher(t *testing.T) {
 		session.On("Authorize", provider, params).Return(nil, nil)
 		provider.On("FetchUser", session).Return(gUser, nil)
 		userFoC.On("FindOrCreate", gUser.Email).Return(user, nil)
+		updater.On("Update", user.ID, gUser.RawData).Return(nil)
 
-		cmd := auth.NewUserFetcher(provider, userFoC)
+		cmd := auth.NewUserFetcher(provider, userFoC, updater)
 
 		result, err := cmd.Fetch(rawsess, params)
 		require.NoError(t, err)
@@ -187,7 +198,7 @@ func TestUserFetcher(t *testing.T) {
 
 		provider.On("UnmarshalSession", rawsess).Return(nil, fail)
 
-		cmd := auth.NewUserFetcher(provider, userFoC)
+		cmd := auth.NewUserFetcher(provider, userFoC, &updaterMock{})
 
 		_, err := cmd.Fetch(rawsess, params)
 		require.Error(t, err)
@@ -208,7 +219,7 @@ func TestUserFetcher(t *testing.T) {
 		fail := errors.New("xxx")
 		session.On("Authorize", provider, params).Return(nil, fail)
 
-		cmd := auth.NewUserFetcher(provider, userFoC)
+		cmd := auth.NewUserFetcher(provider, userFoC, &updaterMock{})
 
 		_, err := cmd.Fetch(rawsess, params)
 		require.Error(t, err)
@@ -229,7 +240,7 @@ func TestUserFetcher(t *testing.T) {
 		session.On("Authorize", provider, params).Return(nil, nil)
 		provider.On("FetchUser", session).Return(nil, fail)
 
-		cmd := auth.NewUserFetcher(provider, userFoC)
+		cmd := auth.NewUserFetcher(provider, userFoC, &updaterMock{})
 
 		_, err := cmd.Fetch(rawsess, params)
 		require.Error(t, err)
@@ -255,7 +266,42 @@ func TestUserFetcher(t *testing.T) {
 		provider.On("FetchUser", session).Return(gUser, nil)
 		userFoC.On("FindOrCreate", gUser.Email).Return(nil, fail)
 
-		cmd := auth.NewUserFetcher(provider, userFoC)
+		cmd := auth.NewUserFetcher(provider, userFoC, &updaterMock{})
+
+		_, err := cmd.Fetch(rawsess, params)
+		require.Error(t, err)
+		require.ErrorIs(t, err, fail)
+	})
+
+	t.Run("FailOnUpdateProfile", func(t *testing.T) {
+		var params goth.Params
+
+		provider := &providerMock{}
+		session := &sessionMock{}
+		userFoC := &userFindOrCreatorMock{}
+		updater := &updaterMock{}
+
+		rawsess := "user.session.value.123"
+		fail := errors.New("xxx")
+
+		gUser := goth.User{
+			Email:   "u1@mail.org",
+			RawData: map[string]interface{}{"Email": "u1@mail.org"},
+		}
+
+		user := model.User{
+			ID:      "user.user.id",
+			Name:    gUser.Email,
+			Created: 1600000000,
+		}
+
+		provider.On("UnmarshalSession", rawsess).Return(session, nil)
+		session.On("Authorize", provider, params).Return(nil, nil)
+		provider.On("FetchUser", session).Return(gUser, nil)
+		userFoC.On("FindOrCreate", gUser.Email).Return(user, nil)
+		updater.On("Update", user.ID, gUser.RawData).Return(fail)
+
+		cmd := auth.NewUserFetcher(provider, userFoC, updater)
 
 		_, err := cmd.Fetch(rawsess, params)
 		require.Error(t, err)

@@ -8,6 +8,7 @@ import (
 
 	"github.com/vbogretsov/guard/api"
 	"github.com/vbogretsov/guard/auth"
+	"github.com/vbogretsov/guard/profile"
 	"github.com/vbogretsov/guard/repo"
 )
 
@@ -93,13 +94,6 @@ func (s *scope) newSessionsRepo() repo.Sessions {
 	return s.sessions
 }
 
-func (s *scope) newSessionValidator() auth.SessionValidator {
-	return auth.NewSessionValidator(
-		s.newSessionsRepo(),
-		s.newTimer(),
-	)
-}
-
 func (s *scope) newUserFindOrCreator() auth.UserFindOrCreator {
 	return auth.NewUserFindOrCreator(
 		s.newUsersRepo(),
@@ -136,12 +130,13 @@ func (s *scope) newUserFetcher(provider goth.Provider) auth.UserFetcher {
 	return auth.NewUserFetcher(
 		provider,
 		s.newUserFindOrCreator(),
+		profile.Empty(),
 	)
 }
 
 func (s *scope) newSignIner(provider goth.Provider) auth.SignIner {
 	return auth.NewSignIner(
-		s.newSessionValidator(),
+		s.newSessionsRepo(),
 		s.newUserFetcher(provider),
 		s.newIssuer(),
 	)

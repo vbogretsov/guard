@@ -7,6 +7,7 @@ import (
 	"github.com/markbates/goth"
 
 	"github.com/vbogretsov/guard/model"
+	"github.com/vbogretsov/guard/profile"
 	"github.com/vbogretsov/guard/repo"
 )
 
@@ -17,12 +18,14 @@ type UserFetcher interface {
 type userFetcher struct {
 	provider goth.Provider
 	users    UserFindOrCreator
+	updater  profile.Updater
 }
 
-func NewUserFetcher(provider goth.Provider, users UserFindOrCreator) UserFetcher {
+func NewUserFetcher(provider goth.Provider, users UserFindOrCreator, updater profile.Updater) UserFetcher {
 	return &userFetcher{
 		provider: provider,
 		users:    users,
+		updater:  updater,
 	}
 }
 
@@ -49,7 +52,9 @@ func (c *userFetcher) Fetch(rawsess string, params goth.Params) (model.User, err
 		return empty, err
 	}
 
-	// TODO: POST profileService/users
+	if err := c.updater.Update(user.ID, gUser.RawData); err != nil {
+		return empty, fmt.Errorf("failed to update user profile: %w", err)
+	}
 
 	return user, err
 }
