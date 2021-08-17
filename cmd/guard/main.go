@@ -8,7 +8,6 @@ import (
 	"time"
 
 	"github.com/caarlos0/env"
-	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
 	"github.com/rs/zerolog"
 	"github.com/ziflex/lecho"
@@ -38,26 +37,20 @@ func run() error {
 
 	useProviders(cfg)
 
-	e := echo.New()
-	e.Debug = cfg.Debug
-	e.HideBanner = true
-	e.Logger = lecho.New(os.Stdout)
-
-	e.Pre(middleware.RemoveTrailingSlash())
-	e.Use(middleware.Logger())
-
-	e.GET("/health", func(c echo.Context) error {
-		return c.NoContent(http.StatusOK)
-	})
-
-	httpAPI := api.NewHttpAPI(NewFactory(db, FactoryConfig{
+	h := api.NewHttpAPI(NewFactory(db, FactoryConfig{
 		SecretKey:  cfg.SecretKey,
 		AccessTTL:  cfg.AccessTTL,
 		RefreshTTL: cfg.RefreshTTL,
 		CodeTTL:    cfg.CodeTTL,
 	}))
 
-	api.Setup(e, httpAPI)
+	e := api.New(h)
+	e.Debug = cfg.Debug
+	e.HideBanner = true
+	e.Logger = lecho.New(os.Stdout)
+
+	e.Pre(middleware.RemoveTrailingSlash())
+	e.Use(middleware.Logger())
 
 	sig := make(chan os.Signal, 1)
 	return start(e, fmt.Sprintf(":%d", cfg.Port), sig, shutdownTimeout)
