@@ -10,7 +10,6 @@ require (
 	github.com/lib/pq v1.10.2 // indirect
 	github.com/markbates/goth v1.68.0 // indirect
 	github.com/rs/zerolog v1.23.0 // indirect
-	github.com/sarulabs/di v2.0.0+incompatible // indirect
 	github.com/stretchr/testify v1.7.0 // indirect
 	github.com/ziflex/lecho v1.2.0 // indirect
 	github.com/ziflex/lecho/v2 v2.5.0 // indirect
