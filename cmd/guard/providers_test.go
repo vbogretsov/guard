@@ -47,47 +47,75 @@ func TestAddProviders(t *testing.T) {
 }
 
 func TestUseProviders(t *testing.T) {
-	cfg := Conf{
-		BaseURL:           "http://localhost:8000",
-		AppleClientID:     "apple-id",
-		AppleClientSecret: "apple-secret",
-		GoogleClientID:    "google-id",
-		GoogleSecret:      "google-secret",
-		FacebookClientID:  "facebook-id",
-		FacebookSecret:    "faacebook-secret",
-		TwitterClientID:   "twitter-id",
-		TwitterSecret:     "twitter-secret",
-		VkClientID:        "vk-id",
-		VkSecret:          "vk-secret",
-		YandexClientID:    "yandex-id",
-		YandexSecret:      "yandex-secret",
-	}
+	t.Run("Success", func(t *testing.T) {
+		cfg := Conf{
+			BaseURL:           "http://localhost:8000",
+			AppleClientID:     "apple-id",
+			AppleClientSecret: "apple-secret",
+			GoogleClientID:    "google-id",
+			GoogleSecret:      "google-secret",
+			FacebookClientID:  "facebook-id",
+			FacebookSecret:    "faacebook-secret",
+			TwitterClientID:   "twitter-id",
+			TwitterSecret:     "twitter-secret",
+			VkClientID:        "vk-id",
+			VkSecret:          "vk-secret",
+			YandexClientID:    "yandex-id",
+			YandexSecret:      "yandex-secret",
+		}
 
-	zerolog.SetGlobalLevel(zerolog.Disabled)
+		zerolog.SetGlobalLevel(zerolog.Disabled)
 
-	useProviders(cfg)
+		useProviders(cfg)
 
-	a, err := goth.GetProvider("apple")
-	require.NoError(t, err)
-	require.NotNil(t, a)
+		a, err := goth.GetProvider("apple")
+		require.NoError(t, err)
+		require.NotNil(t, a)
 
-	g, err := goth.GetProvider("google")
-	require.NoError(t, err)
-	require.NotNil(t, g)
+		g, err := goth.GetProvider("google")
+		require.NoError(t, err)
+		require.NotNil(t, g)
 
-	f, err := goth.GetProvider("facebook")
-	require.NoError(t, err)
-	require.NotNil(t, f)
+		f, err := goth.GetProvider("facebook")
+		require.NoError(t, err)
+		require.NotNil(t, f)
 
-	tw, err := goth.GetProvider("twitter")
-	require.NoError(t, err)
-	require.NotNil(t, tw)
+		tw, err := goth.GetProvider("twitter")
+		require.NoError(t, err)
+		require.NotNil(t, tw)
 
-	v, err := goth.GetProvider("vk")
-	require.NoError(t, err)
-	require.NotNil(t, v)
+		v, err := goth.GetProvider("vk")
+		require.NoError(t, err)
+		require.NotNil(t, v)
 
-	y, err := goth.GetProvider("yandex")
-	require.NoError(t, err)
-	require.NotNil(t, y)
+		y, err := goth.GetProvider("yandex")
+		require.NoError(t, err)
+		require.NotNil(t, y)
+
+		goth.ClearProviders()
+	})
+
+	t.Run("Missconfigured", func(t *testing.T) {
+		cfg := Conf{
+			BaseURL:        "http://localhost:8000",
+			VkClientID:     "",
+			VkSecret:       "vk-secret",
+			YandexClientID: "yandex-id",
+			YandexSecret:   "",
+		}
+
+		zerolog.SetGlobalLevel(zerolog.Disabled)
+
+		useProviders(cfg)
+
+		var err error
+
+		_, err = goth.GetProvider("vk")
+		require.Error(t, err)
+
+		_, err = goth.GetProvider("yandex")
+		require.Error(t, err)
+
+		goth.ClearProviders()
+	})
 }
