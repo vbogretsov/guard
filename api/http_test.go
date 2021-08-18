@@ -163,7 +163,7 @@ func TestHttpStartOAuth(t *testing.T) {
 		err := ctx.handler.StartOAuth(ctx.c)
 		require.NoError(t, err)
 		require.Equal(t, http.StatusTemporaryRedirect, ctx.rec.Code)
-		require.Equal(t, redirectURL, ctx.rec.HeaderMap["Location"][0])
+		require.Equal(t, redirectURL, ctx.rec.Result().Header["Location"][0])
 	})
 
 	t.Run("BadProvider", func(t *testing.T) {

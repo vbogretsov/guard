@@ -1,9 +1,9 @@
-name: Run tests
+name: Tests
 
 on:
   pull_request:
     branches:
-    - '*'
+    - "*"
   workflow_dispatch: {}
 
 jobs:

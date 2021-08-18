@@ -1,9 +1,9 @@
-name: Security scanning
+name: Security scan
 
 on:
   pull_request:
     branches:
-    - '*'
+    - "*"
   workflow_dispatch: {}
 
 jobs:
