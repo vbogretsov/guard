@@ -35,7 +35,7 @@ func run() error {
 
 	zerolog.SetGlobalLevel(logLevel)
 
-	useProviders(cfg)
+	useProviders(cfg, os.Environ())
 
 	h := api.NewHttpAPI(NewFactory(db, FactoryConfig{
 		SecretKey:  cfg.SecretKey,
