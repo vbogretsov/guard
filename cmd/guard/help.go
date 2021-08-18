@@ -53,9 +53,9 @@ Wellknown OAuth providers environment variables:
 
 Custom OIDC providers variables can also be passed:
 
-	PROVIDER_1_OIDC_CLIENT_ID, PROVIDER_1_OIDC_CLIENT_SECRET
+	PROVIDER_1_OIDC_CLIENT_ID, PROVIDER_1_OIDC_CLIENT_SECRET, PROVIDER_1_OIDC_DISCOVERY_URL
 	...
-	PROVIDER_N_OIDC_CLIENT_ID, PROVIDER_N_OIDC_CLIENT_SECRET
+	PROVIDER_N_OIDC_CLIENT_ID, PROVIDER_N_OIDC_CLIENT_SECRET, PROVIDER_N_OIDC_DISCOVERY_URL
 
 where PROVIDER_1, ..., PROVIDER_N -- just any prefixes used to group client id
 and client secret for a particular provider.

@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"sort"
 	"strings"
 	"testing"
@@ -8,6 +9,7 @@ import (
 	"github.com/markbates/goth"
 	"github.com/rs/zerolog"
 	"github.com/stretchr/testify/require"
+	"gopkg.in/h2non/gock.v1"
 )
 
 func TestAddProviders(t *testing.T) {
@@ -20,14 +22,16 @@ func TestAddProviders(t *testing.T) {
 		environ := []string{
 			"P1_OIDC_CLIENT_ID=p1-id",
 			"P1_OIDC_CLIENT_SECRET=p1-secret",
+			"P1_OIDC_DISCOVERY_URL=http://p1.org/discovery",
 			"P2_OIDC_CLIENT_ID=p2-id",
 			"P2_OIDC_CLIENT_SECRET=p2-secret",
+			"P2_OIDC_DISCOVERY_URL=http://p2.org/discovery",
 			"P3_OIDC_CLIENT_ID=p3-id",
 			"OIDC_CLIENT_ID",
 		}
 
 		ps := addProviders(nil, environ)
-		require.Equal(t, len(ps), 3)
+		require.Equal(t, len(ps), 2)
 
 		sort.Slice(ps, func(i, j int) bool {
 			return strings.Compare(ps[i].name, ps[j].name) < 1
@@ -39,9 +43,6 @@ func TestAddProviders(t *testing.T) {
 		require.Equal(t, ps[1].name, "P2")
 		require.Equal(t, ps[1].clientID(Conf{}), "p2-id")
 		require.Equal(t, ps[1].clientSecret(Conf{}), "p2-secret")
-		require.Equal(t, ps[2].name, "P3")
-		require.Equal(t, ps[2].clientID(Conf{}), "p3-id")
-		require.Equal(t, ps[2].clientSecret(Conf{}), "")
 	})
 
 }
@@ -66,7 +67,7 @@ func TestUseProviders(t *testing.T) {
 
 		zerolog.SetGlobalLevel(zerolog.Disabled)
 
-		useProviders(cfg)
+		useProviders(cfg, []string{})
 
 		a, err := goth.GetProvider("apple")
 		require.NoError(t, err)
@@ -106,7 +107,7 @@ func TestUseProviders(t *testing.T) {
 
 		zerolog.SetGlobalLevel(zerolog.Disabled)
 
-		useProviders(cfg)
+		useProviders(cfg, []string{})
 
 		var err error
 
@@ -114,6 +115,65 @@ func TestUseProviders(t *testing.T) {
 		require.Error(t, err)
 
 		_, err = goth.GetProvider("yandex")
+		require.Error(t, err)
+
+		goth.ClearProviders()
+	})
+
+	t.Run("OpenIdConnectSuccess", func(t *testing.T) {
+		defer gock.Off()
+
+		cfg := Conf{
+			BaseURL: "http://localhost:8000",
+		}
+
+		zerolog.SetGlobalLevel(zerolog.Disabled)
+
+		discoveryURL := "http://p1oidc.org"
+		gock.New(discoveryURL).
+			Get("/discovery").
+			Reply(200).
+			JSON(map[string]string{
+				"authorization_endpoint": "/authorize",
+				"token_endpoint":         "/token",
+				"userinfo_endpoint":      "/userinfo",
+				"issuer":                 "p1",
+			})
+
+		useProviders(cfg, []string{
+			"P1_OIDC_CLIENT_ID=p1-id",
+			"P1_OIDC_CLIENT_SECRET=p1-secret",
+			fmt.Sprintf("P1_OIDC_DISCOVERY_URL=%s/discovery", discoveryURL),
+		})
+
+		p1, err := goth.GetProvider("openid-connect")
+		require.NoError(t, err)
+		require.NotNil(t, p1)
+
+		goth.ClearProviders()
+	})
+
+	t.Run("OpenIdConnectFailed", func(t *testing.T) {
+		defer gock.Off()
+
+		cfg := Conf{
+			BaseURL: "http://localhost:8000",
+		}
+
+		zerolog.SetGlobalLevel(zerolog.Disabled)
+
+		discoveryURL := "http://p1oidc.org"
+		gock.New(discoveryURL).
+			Get("/discovery").
+			Reply(404)
+
+		useProviders(cfg, []string{
+			"P1_OIDC_CLIENT_ID=p1-id",
+			"P1_OIDC_CLIENT_SECRET=p1-secret",
+			fmt.Sprintf("P1_OIDC_DISCOVERY_URL=%s/discovery", discoveryURL),
+		})
+
+		_, err := goth.GetProvider("openid-connect")
 		require.Error(t, err)
 
 		goth.ClearProviders()
