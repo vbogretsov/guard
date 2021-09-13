@@ -13,7 +13,6 @@ import (
 	"github.com/rs/zerolog"
 	"github.com/ziflex/lecho"
 
-	"github.com/vbogretsov/guard"
 	"github.com/vbogretsov/guard/api"
 )
 
@@ -36,12 +35,6 @@ func run() error {
 	}
 
 	zerolog.SetGlobalLevel(logLevel)
-	zerolog.ErrorMarshalFunc = func(err error) interface{} {
-		if errors.As(err, &guard.Error{}) {
-			return nil
-		}
-		return err
-	}
 
 	useProviders(cfg, os.Environ())
 
