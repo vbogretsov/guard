@@ -13,3 +13,7 @@ func Empty() Updater {
 func (e *empty) Update(userID string, data map[string]interface{}) error {
 	return nil
 }
+
+type Claimer interface {
+	GetClaims(userID string) (map[string]interface{}, error)
+}
