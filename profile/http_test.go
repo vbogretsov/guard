@@ -14,7 +14,7 @@ func TestHttpClaimer(t *testing.T) {
 	endpoint := "/claims"
 	jspath := "$.user_by_pk"
 	authHdr := "Authorization"
-	authVal := "^abcde.abcde$"
+	authKey := "^abcde.abcde$"
 	userID := "123"
 
 	t.Run("Success", func(t *testing.T) {
@@ -35,11 +35,11 @@ func TestHttpClaimer(t *testing.T) {
 			New(url).
 			Get(endpoint).
 			MatchParams(map[string]string{"user_id": userID}).
-			MatchHeader(authHdr, authVal).
+			MatchHeader(authHdr, authKey).
 			Reply(200).
 			BodyString(claims)
 
-		claimer := profile.NewHttpClaimer(url+endpoint+"?user_id=", jspath, authHdr, authVal)
+		claimer := profile.NewHttpClaimer(url+endpoint+"?user_id=", jspath, authHdr, authKey)
 
 		resp, err := claimer.GetClaims(userID)
 		require.NoError(t, err)
@@ -60,10 +60,10 @@ func TestHttpClaimer(t *testing.T) {
 		gock.
 			New(url).
 			Get(endpoint).
-			MatchHeader(authHdr, authVal).
+			MatchHeader(authHdr, authKey).
 			Reply(200)
 
-		claimer := profile.NewHttpClaimer(url+endpoint+"?user_id=", jspath, authHdr, authVal)
+		claimer := profile.NewHttpClaimer(url+endpoint+"?user_id=", jspath, authHdr, authKey)
 
 		_, err := claimer.GetClaims(userID)
 		require.Error(t, err)
@@ -76,11 +76,11 @@ func TestHttpClaimer(t *testing.T) {
 			New(url).
 			Get(endpoint).
 			MatchParams(map[string]string{"user_id": userID}).
-			MatchHeader(authHdr, authVal).
+			MatchHeader(authHdr, authKey).
 			Reply(400).
 			BodyString(`{"message": "user not found"}`)
 
-		claimer := profile.NewHttpClaimer(url+endpoint+"?user_id=", jspath, authHdr, authVal)
+		claimer := profile.NewHttpClaimer(url+endpoint+"?user_id=", jspath, authHdr, authKey)
 
 		_, err := claimer.GetClaims(userID)
 		require.Error(t, err)
@@ -104,11 +104,11 @@ func TestHttpClaimer(t *testing.T) {
 			New(url).
 			Get(endpoint).
 			MatchParams(map[string]string{"user_id": userID}).
-			MatchHeader(authHdr, authVal).
+			MatchHeader(authHdr, authKey).
 			Reply(200).
 			BodyString(claims)
 
-		claimer := profile.NewHttpClaimer(url+endpoint+"?user_id=", jspath, authHdr, authVal)
+		claimer := profile.NewHttpClaimer(url+endpoint+"?user_id=", jspath, authHdr, authKey)
 
 		_, err := claimer.GetClaims(userID)
 		require.Error(t, err)
@@ -132,11 +132,11 @@ func TestHttpClaimer(t *testing.T) {
 			New(url).
 			Get(endpoint).
 			MatchParams(map[string]string{"user_id": userID}).
-			MatchHeader(authHdr, authVal).
+			MatchHeader(authHdr, authKey).
 			Reply(200).
 			BodyString(claims)
 
-		claimer := profile.NewHttpClaimer(url+endpoint+"?user_id=", jspath, authHdr, authVal)
+		claimer := profile.NewHttpClaimer(url+endpoint+"?user_id=", jspath, authHdr, authKey)
 
 		_, err := claimer.GetClaims(userID)
 		require.Error(t, err)
@@ -158,13 +158,42 @@ func TestHttpClaimer(t *testing.T) {
 			New(url).
 			Get(endpoint).
 			MatchParams(map[string]string{"user_id": userID}).
-			MatchHeader(authHdr, authVal).
+			MatchHeader(authHdr, authKey).
 			Reply(200).
 			BodyString(claims)
 
-		claimer := profile.NewHttpClaimer(url+endpoint+"?user_id=", jspath, authHdr, authVal)
+		claimer := profile.NewHttpClaimer(url+endpoint+"?user_id=", jspath, authHdr, authKey)
 
 		_, err := claimer.GetClaims(userID)
 		require.Error(t, err)
+	})
+}
+
+func TestHttpUpdater(t *testing.T) {
+	url := "http://guard.example.com"
+	endpoint := "/users"
+	authHdr := "Authorization"
+	authKey := "^abcde.abcde$"
+	userID := "123"
+
+	t.Run("Success", func(t *testing.T) {
+		defer gock.Clean()
+
+		gock.
+			New(url).
+			Post(endpoint).
+			MatchHeader(authHdr, authKey).
+			Reply(200)
+
+		updater := profile.NewHttpUpdater(url+endpoint, authHdr, authKey)
+
+		err := updater.Update(userID, map[string]interface{}{
+			"id": userID,
+			"data": map[string]interface{}{
+				"first_name": "Don",
+				"last_name": "Knuth",
+			},
+		})
+		require.NoError(t, err)
 	})
 }

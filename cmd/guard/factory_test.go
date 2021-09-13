@@ -18,7 +18,7 @@ func TestFactory(t *testing.T) {
 
 	pr := google.New("google_id", "google_secret", "http://localhost:8000/google/callback")
 
-	factory := NewFactory(db, FactoryConfig{})
+	factory := NewFactory(db, Conf{})
 	require.NotNil(t, factory.NewSignIner(pr))
 	require.NotSame(t, factory.NewSignIner(pr), factory.NewSignIner(pr))
 	require.NotNil(t, factory.NewOAuthStarter(pr))

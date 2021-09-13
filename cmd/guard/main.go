@@ -34,15 +34,11 @@ func run() error {
 	}
 
 	zerolog.SetGlobalLevel(logLevel)
+	zerolog.ErrorMarshalFunc = ErrorMarshalFunc
 
 	useProviders(cfg, os.Environ())
 
-	h := api.NewHttpAPI(NewFactory(db, FactoryConfig{
-		SecretKey:  cfg.SecretKey,
-		AccessTTL:  cfg.AccessTTL,
-		RefreshTTL: cfg.RefreshTTL,
-		CodeTTL:    cfg.CodeTTL,
-	}))
+	h := api.NewHttpAPI(NewFactory(db, cfg))
 
 	e := api.New(h)
 	e.Debug = cfg.Debug

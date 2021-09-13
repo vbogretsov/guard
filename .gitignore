@@ -18,5 +18,4 @@
 *.cov
 
 .env
-./guard
 cov.html
