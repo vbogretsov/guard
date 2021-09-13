@@ -7,33 +7,38 @@ import (
 	"github.com/golang-jwt/jwt"
 
 	"github.com/vbogretsov/guard/model"
+	"github.com/vbogretsov/guard/profile"
 )
+
+type IssuerConf struct {
+	Key []byte
+	TTL time.Duration
+	Alg jwt.SigningMethod
+}
 
 type Issuer interface {
 	Issue(user model.User) (Token, error)
 }
 
 type issuer struct {
-	secret  []byte
+	conf    IssuerConf
 	timer   Timer
-	ttl     time.Duration
 	refresh RefreshGenerator
-	method  jwt.SigningMethod
+	claimer profile.Claimer
 }
 
-func NewIssuer(secret string, timer Timer, ttl time.Duration, method jwt.SigningMethod, refresh RefreshGenerator) Issuer {
+func NewIssuer(conf IssuerConf, timer Timer, refresh RefreshGenerator, claimer profile.Claimer) Issuer {
 	return &issuer{
-		secret:  []byte(secret),
+		conf:    conf,
 		timer:   timer,
-		ttl:     ttl,
-		method:  method,
 		refresh: refresh,
+		claimer: claimer,
 	}
 }
 
-func encodeJWT(secret []byte, claims map[string]interface{}, method jwt.SigningMethod) (string, error) {
-	token := jwt.NewWithClaims(method, jwt.MapClaims(claims))
-	return token.SignedString(secret)
+func encodeJWT(conf IssuerConf, claims map[string]interface{}) (string, error) {
+	token := jwt.NewWithClaims(conf.Alg, jwt.MapClaims(claims))
+	return token.SignedString(conf.Key)
 }
 
 func (c *issuer) Issue(user model.User) (Token, error) {
@@ -45,15 +50,23 @@ func (c *issuer) Issue(user model.User) (Token, error) {
 	}
 
 	now := c.timer.Now()
-	exp := now.Add(c.ttl).Unix()
+	exp := now.Add(c.conf.TTL).Unix()
+
+	cls, err := c.claimer.GetClaims(user.ID)
+	if err != nil {
+		return token, err
+	}
 
 	claims := map[string]interface{}{
 		"sub": user.Name,
 		"exp": exp,
-		// TODO: add more claims.
 	}
 
-	access, err := encodeJWT(c.secret, claims, c.method)
+	for k, v := range cls {
+		claims[k] = v
+	}
+
+	access, err := encodeJWT(c.conf, claims)
 	if err != nil {
 		return token, fmt.Errorf("jwt encoding failed: %w", err)
 	}

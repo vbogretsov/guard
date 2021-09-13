@@ -3,6 +3,7 @@ module github.com/vbogretsov/guard
 go 1.16
 
 require (
+	github.com/PaesslerAG/jsonpath v0.1.1 // indirect
 	github.com/caarlos0/env v3.5.0+incompatible
 	github.com/golang-jwt/jwt v3.2.1+incompatible // indirect
 	github.com/labstack/echo v3.3.10+incompatible // indirect

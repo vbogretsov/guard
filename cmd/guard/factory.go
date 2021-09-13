@@ -1,8 +1,6 @@
 package main
 
 import (
-	"time"
-
 	"github.com/golang-jwt/jwt"
 	"github.com/markbates/goth"
 	"gorm.io/gorm"
@@ -13,28 +11,21 @@ import (
 	"github.com/vbogretsov/guard/repo"
 )
 
-type FactoryConfig struct {
-	SecretKey  string
-	AccessTTL  time.Duration
-	RefreshTTL time.Duration
-	CodeTTL    time.Duration
-}
-
 type factory struct {
 	db  *gorm.DB
-	cfg FactoryConfig
+	cfg Conf
 }
 
 type scope struct {
 	db       *gorm.DB
-	cfg      FactoryConfig
+	cfg      Conf
 	timer    auth.Timer
 	users    repo.Users
 	tokens   repo.RefreshTokens
 	sessions repo.Sessions
 }
 
-func NewFactory(db *gorm.DB, cfg FactoryConfig) api.Factory {
+func NewFactory(db *gorm.DB, cfg Conf) api.Factory {
 	return &factory{
 		db:  db,
 		cfg: cfg,
@@ -112,11 +103,23 @@ func (s *scope) newrefreshGenerator() auth.RefreshGenerator {
 
 func (s *scope) newIssuer() auth.Issuer {
 	return auth.NewIssuer(
-		s.cfg.SecretKey,
+		auth.IssuerConf{
+			Key: []byte(s.cfg.SecretKey),
+			TTL: s.cfg.AccessTTL,
+			Alg: jwt.SigningMethodHS256,
+		},
 		s.newTimer(),
-		s.cfg.AccessTTL,
-		jwt.SigningMethodHS256,
 		s.newrefreshGenerator(),
+		s.newClaimer(),
+	)
+}
+
+func (s *scope) newClaimer() profile.Claimer {
+	return profile.NewHttpClaimer(
+		s.cfg.ClaimsEndpoint,
+		s.cfg.ClaimsAuthHeader,
+		s.cfg.ClaimsAuthToken,
+		s.cfg.ClaimsJsonPath,
 	)
 }
 
