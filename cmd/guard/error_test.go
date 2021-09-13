@@ -1,14 +1,14 @@
 package main
 
 import (
-	// "encoding/json"
-	// "errors"
+	"encoding/json"
+	"errors"
 	"testing"
 
 	"github.com/rs/zerolog"
-	// "github.com/stretchr/testify/require"
+	"github.com/stretchr/testify/require"
 
-	// "github.com/vbogretsov/guard"
+	"github.com/vbogretsov/guard"
 )
 
 type levelWriter struct {
@@ -27,9 +27,9 @@ func (lv *levelWriter) WriteLevel(level zerolog.Level, p []byte) (n int, err err
 }
 
 func TestErrorLogMarshaler(t *testing.T) {
-	// zerolog.ErrorMarshalFunc = ErrorMarshalFunc
+	zerolog.ErrorMarshalFunc = ErrorMarshalFunc
 
-	/* t.Run("GuardError", func(t *testing.T) {
+	t.Run("GuardError", func(t *testing.T) {
 		w := &levelWriter{}
 		l := zerolog.New(w)
 
@@ -58,6 +58,6 @@ func TestErrorLogMarshaler(t *testing.T) {
 		v := map[string]interface{}{}
 		require.NoError(t, json.Unmarshal(w.buf, &v))
 		require.Equal(t, err.Error(), v["err"])
-	}) */
+	})
 }
 
